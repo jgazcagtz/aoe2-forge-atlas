@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <meta
+      name="description"
+      content="AOE2 Forge Atlas - interactive data explorer for Age of Empires II civilizations, units, buildings and technologies."
+    />
+    <title>AOE2 Forge Atlas</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="aurora"></div>
+    <header class="shell header-shell">
+      <p class="kicker">Age of Empires II Hub</p>
+      <h1>AOE2 Forge Atlas</h1>
+      <p class="lead">
+        Civilizations, units, buildings and technologies in one responsive
+        explorer. Built for competitive players, guides creators, and stream
+        content.
+      </p>
+      <div class="hero-grid" id="globalMetrics">
+        <article class="metric">
+          <p class="metric__label">Civilizations</p>
+          <p class="metric__value" id="metricCivs">...</p>
+        </article>
+        <article class="metric">
+          <p class="metric__label">Units</p>
+          <p class="metric__value" id="metricUnits">...</p>
+        </article>
+        <article class="metric">
+          <p class="metric__label">Buildings</p>
+          <p class="metric__value" id="metricBuildings">...</p>
+        </article>
+        <article class="metric">
+          <p class="metric__label">Technologies</p>
+          <p class="metric__value" id="metricTechs">...</p>
+        </article>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="panel controls" aria-label="Search and controls">
+        <div class="controls-row">
+          <label class="sr-only" for="searchInput">Search</label>
+          <input
+            id="searchInput"
+            class="search"
+            type="search"
+            placeholder="Search civilization, unit, building or technology..."
+          />
+          <button id="refreshData" type="button">Refresh source files</button>
+          <button id="exportSnapshot" type="button">Export snapshot (JSON)</button>
+        </div>
+        <div class="controls-row">
+          <label class="sr-only" for="sortBy">Sort by</label>
+          <select id="sortBy" aria-label="Sort by">
+            <option value="name-asc">Name A to Z</option>
+            <option value="name-desc">Name Z to A</option>
+            <option value="cost-low">Cost low to high</option>
+            <option value="cost-high">Cost high to low</option>
+            <option value="hp-high">Highest HP</option>
+            <option value="attack-high">Highest attack</option>
+          </select>
+          <span id="statusLine" class="status-line">
+            Loading AOE2 data...
+          </span>
+        </div>
+
+        <div id="tabButtons" class="tabs">
+          <button data-tab="overview" class="active">Overview</button>
+          <button data-tab="civs">Civilizations</button>
+          <button data-tab="units">Units</button>
+          <button data-tab="buildings">Buildings</button>
+          <button data-tab="techs">Technologies</button>
+          <button data-tab="monetization">Monetization</button>
+        </div>
+      </section>
+
+      <section class="panel tab-panel active" id="panel-overview">
+        <h2>What is inside the atlas</h2>
+        <p class="muted">
+          This app compiles game-data from open community datasets and keeps your
+          own explorer fast and reusable.
+        </p>
+        <div id="overviewCards" class="card-grid"></div>
+        <div class="grid-two" id="wikiHub"></div>
+      </section>
+
+      <section class="panel tab-panel" id="panel-civs">
+        <h2>Civilization Deep Browse</h2>
+        <div id="civsGrid" class="card-grid"></div>
+      </section>
+
+      <section class="panel tab-panel" id="panel-units">
+        <h2>Units Catalog</h2>
+        <p class="muted">
+          Data includes combat stats, cost, HP, speed and upgrade-ready basics.
+        </p>
+        <div id="unitsGrid" class="card-grid"></div>
+      </section>
+
+      <section class="panel tab-panel" id="panel-buildings">
+        <h2>Buildings Catalog</h2>
+        <p class="muted">
+          Compare defensive values, hit points, range and build-time of every
+          structure.
+        </p>
+        <div id="buildingsGrid" class="card-grid"></div>
+      </section>
+
+      <section class="panel tab-panel" id="panel-techs">
+        <h2>Technology Library</h2>
+        <p class="muted">
+          See age-era options, cost profiles, and research-time patterns in one
+          place.
+        </p>
+        <div id="techGrid" class="card-grid"></div>
+      </section>
+
+      <section class="panel tab-panel" id="panel-monetization">
+        <h2>Monetization-ready surfaces</h2>
+        <div class="card-grid">
+          <article class="card">
+            <h3>Newsletter lead magnets</h3>
+            <p>
+              Add a strategy newsletter and convert visitors into recurring
+              subscribers. Capture email in a gated "Patch Snapshot" form.
+            </p>
+            <span class="tag">Growth ready</span>
+          </article>
+          <article class="card">
+            <h3>Affiliate / sponsorship slots</h3>
+            <p>
+              Reserve ad spaces in reusable sections: sidebar card zones, hero
+              cards, and strategy CTA rows.
+            </p>
+            <span class="tag">Revenue ready</span>
+          </article>
+          <article class="card">
+            <h3>Premium plan hooks</h3>
+            <p>
+              Add paid matchup calculators, civ matchup templates, and build order
+              packs without changing your current navigation.
+            </p>
+            <span class="tag">Scale path</span>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
