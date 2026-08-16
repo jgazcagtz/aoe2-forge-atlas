@@ -1,615 +1,1004 @@
-const DATA_URL = './data/aoe2-data.json';
-const STRINGS_URL = './data/aoe2-strings.json';
-const WIKI_SUMMARY_URL =
-  'https://en.wikipedia.org/api/rest_v1/page/summary/Age_of_Empires_II';
+(function () {
+  "use strict";
 
-const els = {
-  metricCivs: document.getElementById('metricCivs'),
-  metricUnits: document.getElementById('metricUnits'),
-  metricBuildings: document.getElementById('metricBuildings'),
-  metricTechs: document.getElementById('metricTechs'),
-  statusLine: document.getElementById('statusLine'),
-  searchInput: document.getElementById('searchInput'),
-  sortBy: document.getElementById('sortBy'),
-  refreshData: document.getElementById('refreshData'),
-  exportSnapshot: document.getElementById('exportSnapshot'),
-  tabButtons: document.getElementById('tabButtons'),
-  panels: {
-    overview: document.getElementById('panel-overview'),
-    civs: document.getElementById('panel-civs'),
-    units: document.getElementById('panel-units'),
-    buildings: document.getElementById('panel-buildings'),
-    techs: document.getElementById('panel-techs'),
-    monetization: document.getElementById('panel-monetization'),
-  },
-  overviewCards: document.getElementById('overviewCards'),
-  wikiHub: document.getElementById('wikiHub'),
-  civsGrid: document.getElementById('civsGrid'),
-  unitsGrid: document.getElementById('unitsGrid'),
-  buildingsGrid: document.getElementById('buildingsGrid'),
-  techGrid: document.getElementById('techGrid'),
-};
-
-const state = {
-  activeTab: 'overview',
-  query: '',
-  sortBy: 'name-asc',
-  civs: [],
-  units: [],
-  buildings: [],
-  techs: [],
-  civMap: {},
-  unitMap: {},
-  buildingMap: {},
-  techMap: {},
-  rawCivsData: null,
-  strings: null,
-  wiki: null,
-};
-
-function setStatus(message) {
-  els.statusLine.textContent = message;
-}
-
-function normalize(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function stripHtml(input) {
-  return String(input || '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function costToText(cost) {
-  if (!cost || typeof cost !== 'object') {
-    return '—';
-  }
-  const keys = Object.keys(cost);
-  if (!keys.length) {
-    return '—';
-  }
-  return keys
-    .map((resource) => `${cost[resource]} ${resource}`)
-    .join(' · ');
-}
-
-function costToValue(cost) {
-  if (!cost || typeof cost !== 'object') {
-    return 0;
-  }
-  return Object.values(cost).reduce((sum, value) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? sum + num : sum;
-  }, 0);
-}
-
-function mapById(entries) {
-  const result = {};
-  for (const value of Object.values(entries)) {
-    if (!value || value.ID === undefined) continue;
-    result[String(value.ID)] = value;
-  }
-  return result;
-}
-
-function textByStringId(id, fallback = '') {
-  if (!state.strings) return fallback;
-  return state.strings[String(id)] || state.strings[id] || fallback;
-}
-
-function resolveName(type, id, fallback = '') {
-  const map = {
-    unit: state.unitMap,
-    building: state.buildingMap,
-    tech: state.techMap,
-    civ: state.civMap,
+  var FREE_DAILY_LIMIT = 6;
+  var VISUALS = [
+    "./assets/media/medieval-world-map.jpg",
+    "./assets/media/illuminated-manuscript.jpg",
+    "./assets/media/constantinople-map.png"
+  ];
+  var TYPE_LABELS = {
+    civilizations: "Civilization",
+    units: "Unit",
+    buildings: "Building",
+    technologies: "Technology"
   };
-  const entry = map[type]?.[String(id)];
-  if (!entry) return fallback;
-  const label = textByStringId(entry.LanguageNameId);
-  return label || entry.internal_name || fallback;
-}
-
-function parseCivName(civ, key) {
-  const direct = textByStringId(civ.name_string_id);
-  return (direct && stripHtml(direct)) || key.replace(/_/g, ' ');
-}
-
-function parseCivObject(raw) {
-  const civs = [];
-  const civMap = {};
-  for (const [key, civ] of Object.entries(raw)) {
-    const unitList = Array.isArray(civ.Unit) ? civ.Unit : [];
-    const buildingList = Array.isArray(civ.Building) ? civ.Building : [];
-    const techList = Array.isArray(civ.Tech) ? civ.Tech : [];
-    const name = parseCivName(civ, key);
-    const help = stripHtml(textByStringId(civ.help_string_id));
-    const entry = {
-      slug: key,
-      id: civ.id || key,
-      name,
-      era: civ.era || 'base',
-      help,
-      unitIds: unitList.map(String),
-      buildingIds: buildingList.map(String),
-      techIds: techList.map(String),
-      unitCount: unitList.length,
-      buildingCount: buildingList.length,
-      techCount: techList.length,
-      wikiUrl: `https://ageofempires.fandom.com/wiki/${encodeURIComponent(name.replace(/ /g, '_'))}`,
-    };
-    entry.unitNames = unitList
-      .map((id) => resolveName('unit', String(id), `Unit ${id}`))
-      .filter(Boolean)
-      .slice(0, 6);
-    entry.buildingNames = buildingList
-      .map((id) => resolveName('building', String(id), `Building ${id}`))
-      .filter(Boolean)
-      .slice(0, 6);
-    entry.techNames = techList
-      .map((id) => resolveName('tech', String(id), `Tech ${id}`))
-      .filter(Boolean)
-      .slice(0, 6);
-    civs.push(entry);
-    civMap[String(civ.id || key)] = entry;
-  }
-  return { civs, civMap };
-}
-
-function parseUnitItem(rawUnit, type = 'unit') {
-  return {
-    type,
-    id: String(rawUnit.ID),
-    name: stripHtml(textByStringId(rawUnit.LanguageNameId) || rawUnit.internal_name),
-    internalName: rawUnit.internal_name,
-    hp: rawUnit.HP ?? 0,
-    attack: rawUnit.Attack ?? 0,
-    range: rawUnit.Range ?? 0,
-    speed: rawUnit.Speed ?? 0,
-    reload: rawUnit.ReloadTime ?? 0,
-    lineOfSight: rawUnit.LineOfSight ?? 0,
-    armorMelee: rawUnit.MeleeArmor ?? 0,
-    armorPierce: rawUnit.PierceArmor ?? 0,
-    cost: rawUnit.Cost || {},
-    costTotal: costToValue(rawUnit.Cost),
-    raw: rawUnit,
+  var COLLECTION_KEYS = {
+    civilizations: ["civs", "civilizations"],
+    units: ["units"],
+    buildings: ["buildings"],
+    technologies: ["techs", "technologies"]
   };
-}
-
-function parseBuildingItem(rawBuilding) {
-  return {
-    ...parseUnitItem(rawBuilding, 'building'),
-    garrison: rawBuilding.GarrisonCapacity ?? 0,
-    trainTime: rawBuilding.TrainTime ?? 0,
+  var FACT_LABELS = {
+    age: "Available",
+    hp: "Hit points",
+    attack: "Attack",
+    melee_armor: "Melee armor",
+    pierce_armor: "Pierce armor",
+    range: "Range",
+    speed: "Speed",
+    reload_time: "Reload",
+    line_of_sight: "Line of sight",
+    build_time: "Build time",
+    train_time: "Train time",
+    research_time: "Research time",
+    cost: "Cost"
   };
-}
 
-function parseTechItem(rawTech) {
-  return {
-    type: 'tech',
-    id: String(rawTech.ID),
-    name: stripHtml(textByStringId(rawTech.LanguageNameId) || rawTech.internal_name),
-    internalName: rawTech.internal_name,
-    cost: rawTech.Cost || {},
-    costTotal: costToValue(rawTech.Cost),
-    repeatable: Boolean(rawTech.Repeatable),
-    researchTime: rawTech.ResearchTime ?? 0,
-    raw: rawTech,
+  var state = {
+    data: null,
+    strings: {},
+    entities: {
+      civilizations: [],
+      units: [],
+      buildings: [],
+      technologies: []
+    },
+    view: "discover",
+    collection: "units",
+    civFavoritesOnly: false,
+    databaseFavoritesOnly: false,
+    favorites: readSet("forge-atlas-favorites"),
+    compare: [],
+    activeEntity: null
   };
-}
 
-function getRows(list) {
-  if (!state.query) return list;
-  const q = normalize(state.query);
-  return list.filter((entry) =>
-    normalize(`${entry.name} ${entry.internalName || ''} ${entry.help || ''}`).includes(q),
-  );
-}
+  var elements = {};
+  var toastTimer = null;
 
-function sortRows(rows, tab = 'overview') {
-  const key = state.sortBy;
-  const sorted = [...rows];
-  switch (key) {
-    case 'name-desc': {
-      sorted.sort((a, b) => b.name.localeCompare(a.name));
-      break;
+  document.addEventListener("DOMContentLoaded", init);
+
+  function init() {
+    cacheElements();
+    bindEvents();
+    updateQuota();
+    var initialView = window.location.hash.replace("#", "");
+    if (document.querySelector('[data-view="' + initialView + '"]')) {
+      switchView(initialView, false);
     }
-    case 'cost-low': {
-      sorted.sort((a, b) => (a.costTotal || 0) - (b.costTotal || 0));
-      break;
-    }
-    case 'cost-high': {
-      sorted.sort((a, b) => (b.costTotal || 0) - (a.costTotal || 0));
-      break;
-    }
-    case 'hp-high': {
-      sorted.sort((a, b) => (b.hp || 0) - (a.hp || 0));
-      break;
-    }
-    case 'attack-high': {
-      sorted.sort((a, b) => (b.attack || 0) - (a.attack || 0));
-      break;
-    }
-    case 'name-asc':
-    default:
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-      break;
+    loadAtlas();
   }
 
-  if (tab === 'civs') {
-    sorted.sort((a, b) => {
-      if (key === 'cost-low' || key === 'cost-high') {
-        return 0;
+  function cacheElements() {
+    elements.civGrid = document.getElementById("civ-grid");
+    elements.featuredCivs = document.getElementById("featured-civs");
+    elements.databaseGrid = document.getElementById("database-grid");
+    elements.civSearch = document.getElementById("civ-search");
+    elements.databaseSearch = document.getElementById("database-search");
+    elements.civResultCount = document.getElementById("civ-result-count");
+    elements.databaseResultCount = document.getElementById("database-result-count");
+    elements.searchDialog = document.getElementById("search-dialog");
+    elements.detailDialog = document.getElementById("detail-dialog");
+    elements.pricingDialog = document.getElementById("pricing-dialog");
+    elements.creditsDialog = document.getElementById("credits-dialog");
+    elements.globalSearch = document.getElementById("global-search");
+    elements.searchResults = document.getElementById("search-results");
+    elements.detailContent = document.getElementById("detail-content");
+    elements.detailKicker = document.getElementById("detail-kicker");
+    elements.compareTray = document.getElementById("compare-tray");
+    elements.compareItems = document.getElementById("compare-items");
+    elements.compareNow = document.getElementById("compare-now");
+    elements.aiForm = document.getElementById("ai-form");
+    elements.aiQuestion = document.getElementById("ai-question");
+    elements.aiContextLabel = document.getElementById("ai-context-label");
+    elements.chatMessages = document.getElementById("chat-messages");
+    elements.chatSuggestions = document.getElementById("chat-suggestions");
+    elements.quotaText = document.getElementById("quota-text");
+    elements.quotaBar = document.getElementById("quota-bar");
+    elements.toast = document.getElementById("toast");
+  }
+
+  function bindEvents() {
+    document.addEventListener("click", handleDocumentClick);
+    elements.civSearch.addEventListener("input", renderCivilizations);
+    elements.databaseSearch.addEventListener("input", renderDatabase);
+    elements.globalSearch.addEventListener("input", function () {
+      renderGlobalSearch(elements.globalSearch.value);
+    });
+    elements.aiForm.addEventListener("submit", handleAiSubmit);
+    document.getElementById("search-trigger").addEventListener("click", openSearch);
+    document.getElementById("credits-trigger").addEventListener("click", function () {
+      openDialog(elements.creditsDialog);
+    });
+    document.getElementById("clear-compare").addEventListener("click", clearCompare);
+    elements.compareNow.addEventListener("click", openComparison);
+    document.getElementById("clear-chat").addEventListener("click", resetChat);
+    document.addEventListener("keydown", function (event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        openSearch();
       }
+    });
+  }
+
+  async function loadAtlas() {
+    try {
+      var responses = await Promise.all([
+        fetch("./data/aoe2-data.json"),
+        fetch("./data/aoe2-strings.json")
+      ]);
+      if (!responses[0].ok || !responses[1].ok) {
+        throw new Error("Atlas data could not be loaded.");
+      }
+      var payloads = await Promise.all([responses[0].json(), responses[1].json()]);
+      state.data = payloads[0];
+      state.strings = normalizeStrings(payloads[1]);
+      buildEntities();
+      renderAll();
+    } catch (error) {
+      var message = "The atlas data is temporarily unavailable. Refresh to try again.";
+      elements.featuredCivs.innerHTML = '<p class="empty-state">' + message + "</p>";
+      elements.civGrid.innerHTML = '<p class="empty-state">' + message + "</p>";
+      elements.databaseGrid.innerHTML = '<p class="empty-state">' + message + "</p>";
+      showToast(message);
+    }
+  }
+
+  function normalizeStrings(raw) {
+    if (!raw || typeof raw !== "object") {
+      return {};
+    }
+    if (raw.strings && typeof raw.strings === "object") {
+      return raw.strings;
+    }
+    if (raw.en && typeof raw.en === "object") {
+      return raw.en;
+    }
+    return raw;
+  }
+
+  function buildEntities() {
+    Object.keys(COLLECTION_KEYS).forEach(function (type) {
+      var source = {};
+      COLLECTION_KEYS[type].some(function (key) {
+        if (state.data && state.data[key]) {
+          source = state.data[key];
+          return true;
+        }
+        return false;
+      });
+      state.entities[type] = normalizeCollection(source, type);
+    });
+  }
+
+  function normalizeCollection(source, type) {
+    if (!source || typeof source !== "object") {
+      return [];
+    }
+    var entries = Array.isArray(source)
+      ? source.map(function (item, index) { return [String(index), item]; })
+      : Object.entries(source);
+
+    return entries.map(function (entry, index) {
+      var key = entry[0];
+      var raw = entry[1] || {};
+      var nameCandidate = raw.name || raw.Name || raw.internal_name || raw.internalName || key;
+      var resolvedName = resolveText(nameCandidate);
+      var name = resolvedName && !/^\d+$/.test(resolvedName) ? resolvedName : titleCase(key);
+      var description = resolveDescription(raw, type);
+      var age = resolveAge(raw.age || raw.Age || raw.age_id);
+      var cost = formatCost(raw.cost || raw.Cost);
+      var primitiveText = Object.keys(raw).slice(0, 40).map(function (rawKey) {
+        var value = raw[rawKey];
+        return typeof value === "string" || typeof value === "number" ? resolveText(value) : "";
+      }).join(" ");
+      return {
+        id: String(raw.id || raw.ID || key),
+        key: key,
+        type: type,
+        name: cleanText(name),
+        description: description,
+        age: age,
+        cost: cost,
+        raw: raw,
+        order: index,
+        searchText: cleanText(name + " " + description + " " + primitiveText).toLowerCase()
+      };
+    }).filter(function (entity) {
+      return entity.name && entity.name.toLowerCase() !== "undefined";
+    }).sort(function (a, b) {
       return a.name.localeCompare(b.name);
     });
   }
 
-  return sorted;
-}
-
-function renderListCards(container, rows, renderCard) {
-  container.innerHTML = '';
-  if (!rows.length) {
-    container.innerHTML =
-      '<article class="card"><p>No results with current search and filters.</p></article>';
-    return;
-  }
-  for (const row of rows) {
-    container.appendChild(renderCard(row));
-  }
-}
-
-function makeTag(text) {
-  const tag = document.createElement('span');
-  tag.className = 'tag';
-  tag.textContent = text;
-  return tag;
-}
-
-function makeSimpleLink(href, text) {
-  const a = document.createElement('a');
-  a.className = 'inline-link';
-  a.href = href;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  a.textContent = text;
-  return a;
-}
-
-function makeCard(title, description, valueLines = []) {
-  const article = document.createElement('article');
-  article.className = 'card';
-  const h = document.createElement('h3');
-  h.textContent = title;
-  article.appendChild(h);
-  const p = document.createElement('p');
-  p.textContent = description || 'No description available.';
-  article.appendChild(p);
-
-  if (valueLines.length) {
-    const stats = document.createElement('div');
-    stats.className = 'stats-line';
-    valueLines.forEach((line) => {
-      const s = document.createElement('span');
-      s.textContent = line;
-      stats.appendChild(s);
-    });
-    article.appendChild(stats);
-  }
-  return article;
-}
-
-function renderCivCard(civ) {
-  const card = document.createElement('article');
-  card.className = 'card';
-  const h3 = document.createElement('h3');
-  h3.textContent = civ.name;
-  card.appendChild(h3);
-
-  const meta = document.createElement('div');
-  meta.className = 'item-meta';
-  meta.appendChild(makeTag(`Era ${civ.era}`));
-  meta.appendChild(makeTag(`${civ.unitCount} units`));
-  meta.appendChild(makeTag(`${civ.buildingCount} buildings`));
-  meta.appendChild(makeTag(`${civ.techCount} techs`));
-  card.appendChild(meta);
-
-  const desc = document.createElement('p');
-  desc.className = 'muted';
-  desc.textContent =
-    (civ.help ? `${civ.help.substring(0, 170)}...` : 'Civilization bonus details loaded from data source.') ||
-    '';
-  card.appendChild(desc);
-
-  const row = document.createElement('div');
-  row.className = 'stats-line';
-  row.innerHTML = `<span>Top units: ${civ.unitNames.slice(0, 3).join(', ') || 'none'}</span>`;
-  card.appendChild(row);
-
-  const details = document.createElement('details');
-  const summary = document.createElement('summary');
-  summary.textContent = 'Full civ roster';
-  details.appendChild(summary);
-
-  const ul = document.createElement('ul');
-  const top = civ.unitNames.slice(0, 12);
-  const buildingPreview = civ.buildingNames.slice(0, 12);
-  const techPreview = civ.techNames.slice(0, 12);
-  for (const item of top) {
-    const li = document.createElement('li');
-    li.textContent = `${item} (unit)`;
-    ul.appendChild(li);
-  }
-  for (const item of buildingPreview) {
-    const li = document.createElement('li');
-    li.textContent = `${item} (building)`;
-    ul.appendChild(li);
-  }
-  for (const item of techPreview) {
-    const li = document.createElement('li');
-    li.textContent = `${item} (tech)`;
-    ul.appendChild(li);
-  }
-  details.appendChild(ul);
-  card.appendChild(details);
-
-  const cta = document.createElement('div');
-  cta.className = 'cta-row';
-  cta.appendChild(makeSimpleLink(civ.wikiUrl, 'Open wiki page'));
-  const wikiLink = document.createElement('a');
-  wikiLink.className = 'wiki-btn';
-  wikiLink.href = 'https://en.wikipedia.org/wiki/Age_of_Empires_II';
-  wikiLink.target = '_blank';
-  wikiLink.rel = 'noopener noreferrer';
-  wikiLink.textContent = 'AOE2 wiki';
-  cta.appendChild(wikiLink);
-  card.appendChild(cta);
-
-  return card;
-}
-
-function renderUnitCard(item) {
-  const card = document.createElement('article');
-  card.className = 'card';
-  card.innerHTML = `
-    <h3>${item.name}</h3>
-    <p class="muted">${item.type.toUpperCase()} • ${item.internalName}</p>
-    <div class="item-meta">
-      <span class="tag">Cost: ${costToText(item.cost)}</span>
-      <span class="tag">Cost Total: ${item.costTotal}</span>
-      <span class="tag">HP: ${item.hp}</span>
-    </div>
-    <div class="stats-line">
-      <span>Attack: ${item.attack}</span>
-      <span>Range: ${item.range}</span>
-      <span>Speed: ${item.speed}</span>
-      <span>Reload: ${item.reload}</span>
-      <span>Armor: Melee ${item.armorMelee}, Pierce ${item.armorPierce}</span>
-      <span>LOS: ${item.lineOfSight}</span>
-    </div>
-  `;
-  return card;
-}
-
-function renderTechCard(item) {
-  const card = document.createElement('article');
-  card.className = 'card';
-  card.innerHTML = `
-    <h3>${item.name}</h3>
-    <p class="muted">${item.type.toUpperCase()} • ${item.internalName}</p>
-    <div class="item-meta">
-      <span class="tag">Cost: ${costToText(item.cost)}</span>
-      <span class="tag">Repeatable: ${item.repeatable ? 'yes' : 'no'}</span>
-      <span class="tag">Research: ${item.researchTime}s</span>
-    </div>
-  `;
-  return card;
-}
-
-function renderOverviewCards() {
-  const civs = sortRows(getRows(state.civs), 'civs');
-  const units = sortRows(getRows(state.units), 'units');
-  const buildings = sortRows(getRows(state.buildings), 'buildings');
-  const techs = sortRows(getRows(state.techs), 'techs');
-
-  const featured = [
-    ['Civilizations loaded', `${civs.length} unique civilization profiles`],
-    ['Largest unit list', units[0]?.name || 'No data'],
-    ['Largest building list', buildings[0]?.name || 'No data'],
-    ['Highest cost tech', techs[0]?.name || 'No data'],
-  ];
-
-  els.overviewCards.innerHTML = '';
-  for (const item of featured) {
-    els.overviewCards.appendChild(
-      makeCard(
-        item[0],
-        item[1],
-        [
-          `Dataset timestamp: ${new Date().toLocaleString()}`,
-          `Data mode: ${state.wiki ? 'live summaries + local AOE2 dataset' : 'local dataset only'}`,
-        ],
-      ),
-    );
+  function resolveDescription(raw, type) {
+    var candidate = raw.description || raw.Description || raw.helptext || raw.help_text || raw.tooltip || raw.summary;
+    var resolved = cleanText(resolveText(candidate));
+    if (resolved && !/^\d+$/.test(resolved)) {
+      return resolved;
+    }
+    var bullets = extractBullets(raw);
+    if (bullets.length) {
+      return bullets.slice(0, 2).join(" ");
+    }
+    if (type === "civilizations") {
+      return "Open the civilization record to inspect its identity, bonuses, and available technology.";
+    }
+    return "Open this atlas record for available stats, costs, and connected strategy context.";
   }
 
-  const summary = state.wiki
-    ? stripHtml(state.wiki.extract || '')
-    : 'Age of Empires II summary will appear here once loaded.';
-  const wikiCard = makeCard(
-    'Age of Empires II quick context',
-    summary ? summary.substring(0, 390) + '…' : 'No wiki summary available.',
-    ['Live source: Wikipedia Age of Empires II', `Source URL: ${state.wiki?.content_urls?.desktop?.page || 'N/A'}`],
-  );
-  wikiCard.classList.remove('card');
-  wikiCard.className = 'card';
-  const linkWrap = document.createElement('div');
-  linkWrap.className = 'cta-row';
-  const link = document.createElement('a');
-  link.className = 'wiki-btn';
-  link.href = state.wiki?.content_urls?.desktop?.page || 'https://en.wikipedia.org/wiki/Age_of_Empires_II';
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = 'Open full page';
-  linkWrap.appendChild(link);
-  wikiCard.appendChild(linkWrap);
-
-  const list = document.createElement('article');
-  list.className = 'card';
-  list.innerHTML = `
-    <h3>Useful quick links</h3>
-    <p class="muted">Jump straight to community pages, patch guides, and strategy resources.</p>
-  `;
-  const quickLinks = document.createElement('div');
-  quickLinks.className = 'cta-row';
-  quickLinks.appendChild(makeSimpleLink('https://www.ageofempires.com/news/', 'Official News'));
-  quickLinks.appendChild(makeSimpleLink('https://ageofempires.fandom.com/wiki/Age_of_Empires_II', 'Fandom Age of Empires II'));
-  quickLinks.appendChild(makeSimpleLink('https://www.ageofempires.com/games/age-of-empires-ii-de/', 'Game Home'));
-  list.appendChild(quickLinks);
-
-  els.wikiHub.innerHTML = '';
-  els.wikiHub.appendChild(wikiCard);
-  els.wikiHub.appendChild(list);
-}
-
-function renderAll() {
-  if (!state.civs.length) return;
-  els.metricCivs.textContent = String(state.civs.length);
-  els.metricUnits.textContent = String(state.units.length);
-  els.metricBuildings.textContent = String(state.buildings.length);
-  els.metricTechs.textContent = String(state.techs.length);
-
-  renderOverviewCards();
-
-  const civRows = sortRows(getRows(state.civs), 'civs');
-  renderListCards(els.civsGrid, civRows, renderCivCard);
-
-  const unitRows = sortRows(getRows(state.units), 'units');
-  renderListCards(els.unitsGrid, unitRows, renderUnitCard);
-
-  const buildingRows = sortRows(getRows(state.buildings), 'buildings');
-  renderListCards(els.buildingsGrid, buildingRows, renderUnitCard);
-
-  const techRows = sortRows(getRows(state.techs), 'techs');
-  renderListCards(els.techGrid, techRows, renderTechCard);
-}
-
-function switchTab(tabName) {
-  state.activeTab = tabName;
-  for (const [name, panel] of Object.entries(els.panels)) {
-    panel.classList.toggle('active', name === tabName);
+  function resolveText(value) {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    if (Array.isArray(value)) {
+      return value.map(resolveText).filter(Boolean).join(" ");
+    }
+    if (typeof value === "object") {
+      return resolveText(value.text || value.value || value.en || value.name || "");
+    }
+    var key = String(value);
+    var lookedUp = state.strings[key];
+    if (lookedUp !== undefined && lookedUp !== value) {
+      if (typeof lookedUp === "object") {
+        return resolveText(lookedUp);
+      }
+      return String(lookedUp);
+    }
+    return key;
   }
-  for (const button of els.tabButtons.querySelectorAll('button')) {
-    button.classList.toggle('active', button.dataset.tab === tabName);
+
+  function cleanText(value) {
+    var holder = document.createElement("div");
+    holder.innerHTML = String(value || "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/\\n/g, " ")
+      .replace(/\{[^}]+\}/g, " ");
+    return (holder.textContent || "").replace(/\s+/g, " ").trim();
   }
-  if (tabName === 'overview') {
-    renderOverviewCards();
-  }
-}
 
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Fetch failed ${response.status}`);
-  }
-  return response.json();
-}
-
-async function fetchWikiSummary() {
-  try {
-    return await fetchJson(WIKI_SUMMARY_URL);
-  } catch {
-    return null;
-  }
-}
-
-function bootstrapState(rawData, rawStrings, wiki) {
-  state.strings = rawStrings;
-  state.rawCivsData = rawData.civs || {};
-  const dataBuckets = rawData.data || {};
-
-  state.unitMap = mapById(dataBuckets.Unit || {});
-  state.buildingMap = mapById(dataBuckets.Building || {});
-  state.techMap = mapById(dataBuckets.Tech || {});
-
-  const parsedCivs = parseCivObject(state.rawCivsData);
-  state.civs = parsedCivs.civs;
-  state.civMap = parsedCivs.civMap;
-  state.units = Object.values(state.unitMap).map((unit) => parseUnitItem(unit, 'unit'));
-  state.buildings = Object.values(state.buildingMap).map((building) => parseBuildingItem(building));
-  state.techs = Object.values(state.techMap).map((tech) => parseTechItem(tech));
-  state.wiki = wiki;
-}
-
-function initEvents() {
-  els.searchInput.addEventListener('input', (event) => {
-    state.query = event.target.value;
-    renderAll();
-  });
-  els.sortBy.addEventListener('change', (event) => {
-    state.sortBy = event.target.value;
-    renderAll();
-  });
-  els.refreshData.addEventListener('click', () => {
-    loadData(true);
-  });
-  els.exportSnapshot.addEventListener('click', () => {
-    const snapshot = {
-      source: 'AOE2 Forge Atlas local snapshot',
-      createdAt: new Date().toISOString(),
-      civs: state.civs,
-      units: state.units,
-      buildings: state.buildings,
-      techs: state.techs,
+  function resolveAge(value) {
+    if (value === null || value === undefined || value === "") {
+      return "";
+    }
+    if (state.data && state.data.age_names && state.data.age_names[value] !== undefined) {
+      return cleanText(resolveText(state.data.age_names[value]));
+    }
+    var numeric = Number(value);
+    var ages = {
+      0: "Dark Age",
+      1: "Dark Age",
+      2: "Feudal Age",
+      3: "Castle Age",
+      4: "Imperial Age",
+      5: "Post-Imperial"
     };
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `aoe2-forge-atlas-snapshot-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  });
-  els.tabButtons.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-tab]');
-    if (!button) return;
-    switchTab(button.dataset.tab);
-  });
-}
-
-async function loadData(force) {
-  if (!force) setStatus('Loading AOE2 data from local files...');
-  else setStatus('Refreshing local dataset...');
-  try {
-    const cacheBuster = force ? `?t=${Date.now()}` : '';
-    const [rawData, strings, wiki] = await Promise.all([
-      fetchJson(`${DATA_URL}${cacheBuster}`),
-      fetchJson(`${STRINGS_URL}${cacheBuster}`),
-      fetchWikiSummary(),
-    ]);
-    bootstrapState(rawData, strings, wiki);
-    renderAll();
-    setStatus('Dataset ready. Use search and filters to explore.');
-  } catch (error) {
-    setStatus(`Failed to load data (${error.message}).`);
-    console.error(error);
+    return ages[numeric] || cleanText(resolveText(value));
   }
-}
 
-function init() {
-  initEvents();
-  switchTab('overview');
-  loadData(false);
-}
+  function formatCost(cost) {
+    if (!cost) {
+      return "";
+    }
+    if (Array.isArray(cost)) {
+      return cost.map(function (item) {
+        if (item && typeof item === "object") {
+          return Object.keys(item).map(function (key) {
+            return titleCase(key) + " " + item[key];
+          }).join(" ");
+        }
+        return String(item);
+      }).join(", ");
+    }
+    if (typeof cost === "object") {
+      return Object.keys(cost).filter(function (key) {
+        return cost[key] !== null && cost[key] !== undefined && Number(cost[key]) !== 0;
+      }).map(function (key) {
+        return titleCase(key) + " " + cost[key];
+      }).join(" / ");
+    }
+    return cleanText(resolveText(cost));
+  }
 
-document.addEventListener('DOMContentLoaded', init);
+  function renderAll() {
+    updateCounts();
+    renderFeatured();
+    renderCivilizations();
+    renderDatabase();
+  }
+
+  function updateCounts() {
+    setText("civ-count", state.entities.civilizations.length);
+    setText("unit-count", state.entities.units.length);
+    setText("building-count", state.entities.buildings.length);
+    setText("tech-count", state.entities.technologies.length);
+    setText("units-tab-count", state.entities.units.length);
+    setText("buildings-tab-count", state.entities.buildings.length);
+    setText("technologies-tab-count", state.entities.technologies.length);
+  }
+
+  function renderFeatured() {
+    var featured = state.entities.civilizations.slice(0, 6);
+    elements.featuredCivs.innerHTML = featured.map(function (entity, index) {
+      return entityCard(entity, index);
+    }).join("");
+  }
+
+  function renderCivilizations() {
+    var query = (elements.civSearch.value || "").trim().toLowerCase();
+    var list = state.entities.civilizations.filter(function (entity) {
+      var matchesSearch = !query || entity.searchText.indexOf(query) !== -1;
+      var matchesFavorite = !state.civFavoritesOnly || isFavorite(entity);
+      return matchesSearch && matchesFavorite;
+    });
+    elements.civResultCount.textContent = list.length + " records";
+    elements.civGrid.innerHTML = list.length
+      ? list.map(function (entity, index) { return entityCard(entity, index); }).join("")
+      : '<p class="empty-state">No civilizations match this search yet.</p>';
+  }
+
+  function renderDatabase() {
+    var query = (elements.databaseSearch.value || "").trim().toLowerCase();
+    var list = state.entities[state.collection].filter(function (entity) {
+      var matchesSearch = !query || entity.searchText.indexOf(query) !== -1;
+      var matchesFavorite = !state.databaseFavoritesOnly || isFavorite(entity);
+      return matchesSearch && matchesFavorite;
+    });
+    elements.databaseResultCount.textContent = list.length + " records";
+    elements.databaseGrid.innerHTML = list.length
+      ? list.map(function (entity, index) { return entityCard(entity, index); }).join("")
+      : '<p class="empty-state">No records match this search yet.</p>';
+  }
+
+  function entityCard(entity, index) {
+    var image = VISUALS[(index + typeOffset(entity.type)) % VISUALS.length];
+    var meta = [];
+    if (entity.age) {
+      meta.push(entity.age);
+    }
+    if (entity.cost) {
+      meta.push(entity.cost);
+    }
+    if (!meta.length) {
+      meta.push("Atlas record");
+    }
+    var saved = isFavorite(entity);
+    return '<article class="entity-card">' +
+      '<div class="entity-card-image">' +
+        '<img src="' + image + '" loading="lazy" alt="">' +
+        '<span class="entity-index">' + String(index + 1).padStart(2, "0") + "</span>" +
+        '<span class="entity-type">' + escapeHtml(TYPE_LABELS[entity.type]) + "</span>" +
+      "</div>" +
+      '<div class="entity-card-body">' +
+        "<h3>" + escapeHtml(entity.name) + "</h3>" +
+        "<p>" + escapeHtml(entity.description) + "</p>" +
+        '<div class="entity-meta">' + meta.slice(0, 2).map(function (item) {
+          return "<span>" + escapeHtml(item) + "</span>";
+        }).join("") + "</div>" +
+      "</div>" +
+      '<div class="entity-card-actions">' +
+        '<button class="card-action card-action-primary" type="button" data-open-detail="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Open brief</button>' +
+        '<button class="card-action ' + (saved ? "is-saved" : "") + '" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + (saved ? "Saved" : "Save") + "</button>" +
+        '<button class="card-action" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Compare</button>' +
+      "</div>" +
+    "</article>";
+  }
+
+  function typeOffset(type) {
+    return {
+      civilizations: 0,
+      units: 1,
+      buildings: 2,
+      technologies: 0
+    }[type] || 0;
+  }
+
+  function handleDocumentClick(event) {
+    var viewButton = event.target.closest("[data-view-target]");
+    if (viewButton) {
+      var collectionTarget = viewButton.getAttribute("data-collection-target");
+      if (collectionTarget) {
+        setCollection(collectionTarget);
+      }
+      switchView(viewButton.getAttribute("data-view-target"));
+      return;
+    }
+
+    var collectionButton = event.target.closest("[data-collection]");
+    if (collectionButton) {
+      setCollection(collectionButton.getAttribute("data-collection"));
+      return;
+    }
+
+    var detailButton = event.target.closest("[data-open-detail]");
+    if (detailButton) {
+      openDetail(findEntity(detailButton.getAttribute("data-entity-type"), detailButton.getAttribute("data-open-detail")));
+      return;
+    }
+
+    var favoriteButton = event.target.closest("[data-favorite]");
+    if (favoriteButton) {
+      toggleFavorite(findEntity(favoriteButton.getAttribute("data-entity-type"), favoriteButton.getAttribute("data-favorite")));
+      return;
+    }
+
+    var compareButton = event.target.closest("[data-compare]");
+    if (compareButton) {
+      toggleCompare(findEntity(compareButton.getAttribute("data-entity-type"), compareButton.getAttribute("data-compare")));
+      return;
+    }
+
+    var removeCompareButton = event.target.closest("[data-remove-compare]");
+    if (removeCompareButton) {
+      removeCompare(removeCompareButton.getAttribute("data-remove-compare"));
+      return;
+    }
+
+    var promptButton = event.target.closest("[data-ai-prompt]");
+    if (promptButton) {
+      setAiPrompt(promptButton.getAttribute("data-ai-prompt"));
+      return;
+    }
+
+    var priceButton = event.target.closest("[data-open-pricing]");
+    if (priceButton) {
+      openDialog(elements.pricingDialog);
+      return;
+    }
+
+    var closeButton = event.target.closest("[data-close-dialog]");
+    if (closeButton) {
+      var dialog = closeButton.closest("dialog");
+      if (dialog) {
+        dialog.close();
+      }
+      return;
+    }
+
+    var favoriteFilter = event.target.closest("[data-favorites-filter]");
+    if (favoriteFilter) {
+      state.civFavoritesOnly = favoriteFilter.getAttribute("data-favorites-filter") === "true";
+      setActiveFilter("[data-favorites-filter]", favoriteFilter);
+      renderCivilizations();
+      return;
+    }
+
+    var databaseFilter = event.target.closest("[data-database-filter]");
+    if (databaseFilter) {
+      state.databaseFavoritesOnly = databaseFilter.getAttribute("data-database-filter") === "favorites";
+      setActiveFilter("[data-database-filter]", databaseFilter);
+      renderDatabase();
+      return;
+    }
+
+    var searchResult = event.target.closest("[data-search-result]");
+    if (searchResult) {
+      elements.searchDialog.close();
+      openDetail(findEntity(searchResult.getAttribute("data-entity-type"), searchResult.getAttribute("data-search-result")));
+      return;
+    }
+
+    var askContextButton = event.target.closest("[data-ask-context]");
+    if (askContextButton) {
+      var contextEntity = findEntity(askContextButton.getAttribute("data-entity-type"), askContextButton.getAttribute("data-ask-context"));
+      if (contextEntity) {
+        state.activeEntity = contextEntity;
+        elements.detailDialog.close();
+        setAiPrompt("Explain " + contextEntity.name + " and give me the most useful strategic takeaways.");
+      }
+      return;
+    }
+
+    var planButton = event.target.closest("[data-plan-interest]");
+    if (planButton) {
+      savePlanInterest(planButton);
+    }
+  }
+
+  function switchView(view, updateHash) {
+    if (!document.querySelector('[data-view="' + view + '"]')) {
+      return;
+    }
+    state.view = view;
+    document.querySelectorAll("[data-view]").forEach(function (section) {
+      var active = section.getAttribute("data-view") === view;
+      section.hidden = !active;
+      section.classList.toggle("is-active", active);
+    });
+    document.querySelectorAll("[data-view-target]").forEach(function (button) {
+      var active = button.getAttribute("data-view-target") === view;
+      if (active) {
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+    if (updateHash !== false) {
+      history.replaceState(null, "", "#" + view);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (view === "ai") {
+      updateAiContext();
+    }
+  }
+
+  function setCollection(collection) {
+    if (!state.entities[collection] || collection === "civilizations") {
+      return;
+    }
+    state.collection = collection;
+    document.querySelectorAll("[data-collection]").forEach(function (button) {
+      button.setAttribute("aria-selected", String(button.getAttribute("data-collection") === collection));
+    });
+    elements.databaseSearch.value = "";
+    renderDatabase();
+  }
+
+  function setActiveFilter(selector, activeButton) {
+    document.querySelectorAll(selector).forEach(function (button) {
+      button.classList.toggle("is-active", button === activeButton);
+    });
+  }
+
+  function findEntity(type, id) {
+    if (!state.entities[type]) {
+      return null;
+    }
+    return state.entities[type].find(function (entity) {
+      return entity.id === String(id);
+    }) || null;
+  }
+
+  function entityStorageKey(entity) {
+    return entity.type + ":" + entity.id;
+  }
+
+  function isFavorite(entity) {
+    return entity && state.favorites.has(entityStorageKey(entity));
+  }
+
+  function toggleFavorite(entity) {
+    if (!entity) {
+      return;
+    }
+    var key = entityStorageKey(entity);
+    if (state.favorites.has(key)) {
+      state.favorites.delete(key);
+      showToast(entity.name + " removed from saved records.");
+    } else {
+      state.favorites.add(key);
+      showToast(entity.name + " saved to your atlas.");
+    }
+    writeSet("forge-atlas-favorites", state.favorites);
+    renderCivilizations();
+    renderDatabase();
+    renderFeatured();
+    if (elements.detailDialog.open) {
+      openDetail(entity);
+    }
+  }
+
+  function toggleCompare(entity) {
+    if (!entity) {
+      return;
+    }
+    var key = entityStorageKey(entity);
+    var existingIndex = state.compare.findIndex(function (item) {
+      return entityStorageKey(item) === key;
+    });
+    if (existingIndex !== -1) {
+      state.compare.splice(existingIndex, 1);
+      showToast(entity.name + " removed from comparison.");
+    } else {
+      if (state.compare.length === 2) {
+        state.compare.shift();
+      }
+      state.compare.push(entity);
+      showToast(entity.name + " added to comparison.");
+    }
+    renderCompareTray();
+  }
+
+  function removeCompare(key) {
+    state.compare = state.compare.filter(function (entity) {
+      return entityStorageKey(entity) !== key;
+    });
+    renderCompareTray();
+  }
+
+  function clearCompare() {
+    state.compare = [];
+    renderCompareTray();
+  }
+
+  function renderCompareTray() {
+    elements.compareTray.hidden = state.compare.length === 0;
+    elements.compareItems.innerHTML = state.compare.map(function (entity) {
+      return '<span class="compare-chip">' + escapeHtml(entity.name) +
+        '<button type="button" aria-label="Remove ' + escapeHtml(entity.name) + '" data-remove-compare="' + escapeHtml(entityStorageKey(entity)) + '">x</button></span>';
+    }).join("");
+    elements.compareNow.disabled = state.compare.length !== 2;
+  }
+
+  function openComparison() {
+    if (state.compare.length !== 2) {
+      return;
+    }
+    elements.detailKicker.textContent = "Side-by-side field brief";
+    elements.detailContent.innerHTML = '<div class="comparison-grid">' +
+      state.compare.map(function (entity) {
+        return '<article class="comparison-column">' +
+          '<p class="eyebrow">' + escapeHtml(TYPE_LABELS[entity.type]) + "</p>" +
+          "<h2>" + escapeHtml(entity.name) + "</h2>" +
+          '<dl class="fact-grid">' + renderFacts(entity) + "</dl>" +
+          '<p>' + escapeHtml(entity.description) + "</p>" +
+          '<button class="button button-ghost" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Ask AI about this</button>' +
+        "</article>";
+      }).join("") +
+    "</div>";
+    openDialog(elements.detailDialog);
+  }
+
+  function openDetail(entity) {
+    if (!entity) {
+      return;
+    }
+    state.activeEntity = entity;
+    updateAiContext();
+    var bullets = extractBullets(entity.raw);
+    var saved = isFavorite(entity);
+    var image = VISUALS[(entity.order + typeOffset(entity.type)) % VISUALS.length];
+    elements.detailKicker.textContent = TYPE_LABELS[entity.type] + " atlas record";
+    elements.detailContent.innerHTML =
+      '<div class="detail-hero">' +
+        '<img src="' + image + '" alt="">' +
+        '<div class="detail-copy">' +
+          '<p class="eyebrow">' + escapeHtml(TYPE_LABELS[entity.type]) + "</p>" +
+          "<h2>" + escapeHtml(entity.name) + "</h2>" +
+          "<p>" + escapeHtml(entity.description) + "</p>" +
+          '<div class="detail-actions">' +
+            '<button class="button button-primary" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Ask Forge AI</button>' +
+            '<button class="button button-ghost" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + (saved ? "Saved" : "Save record") + "</button>" +
+            '<button class="button button-ghost" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Compare</button>' +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="detail-body">' +
+        '<section class="fact-panel"><h3>Quick facts</h3><dl class="fact-grid">' + renderFacts(entity) + "</dl></section>" +
+        '<section class="context-panel"><h3>Strategy context</h3>' +
+          (bullets.length
+            ? "<ul>" + bullets.slice(0, 8).map(function (bullet) { return "<li>" + escapeHtml(bullet) + "</li>"; }).join("") + "</ul>"
+            : "<p>Use Forge AI to connect this record to counters, upgrades, and civilization choices.</p>") +
+        "</section>" +
+      "</div>";
+    openDialog(elements.detailDialog);
+  }
+
+  function renderFacts(entity) {
+    var facts = [];
+    if (entity.age) {
+      facts.push(["Available", entity.age]);
+    }
+    if (entity.cost) {
+      facts.push(["Cost", entity.cost]);
+    }
+    Object.keys(FACT_LABELS).forEach(function (key) {
+      if (key === "age" || key === "cost") {
+        return;
+      }
+      var value = entity.raw[key];
+      if (value === undefined && entity.raw[camelCase(key)] !== undefined) {
+        value = entity.raw[camelCase(key)];
+      }
+      if (value !== undefined && value !== null && value !== "" && typeof value !== "object") {
+        facts.push([FACT_LABELS[key], resolveText(value)]);
+      }
+    });
+    if (entity.type === "civilizations" && entity.raw.tech_tree) {
+      var tree = entity.raw.tech_tree;
+      if (tree.units && tree.units.length !== undefined) {
+        facts.push(["Unit options", tree.units.length]);
+      }
+      if (tree.techs && tree.techs.length !== undefined) {
+        facts.push(["Technology options", tree.techs.length]);
+      }
+    }
+    if (!facts.length) {
+      facts.push(["Record type", TYPE_LABELS[entity.type]]);
+      facts.push(["Atlas ID", entity.id]);
+    }
+    return facts.slice(0, 10).map(function (fact) {
+      return "<div><dt>" + escapeHtml(fact[0]) + "</dt><dd>" + escapeHtml(String(fact[1])) + "</dd></div>";
+    }).join("");
+  }
+
+  function extractBullets(raw) {
+    var keys = [
+      "civ_bonus",
+      "civ_bonuses",
+      "bonuses",
+      "bonus",
+      "team_bonus",
+      "unique_units",
+      "unique_unit",
+      "unique_techs",
+      "unique_technologies",
+      "special"
+    ];
+    var bullets = [];
+    keys.forEach(function (key) {
+      var value = raw[key];
+      if (value === undefined || value === null) {
+        return;
+      }
+      var values = Array.isArray(value) ? value : [value];
+      values.forEach(function (item) {
+        var text = cleanText(resolveText(item));
+        if (text && !/^\d+$/.test(text) && bullets.indexOf(text) === -1) {
+          bullets.push(text);
+        }
+      });
+    });
+    return bullets;
+  }
+
+  function openSearch() {
+    openDialog(elements.searchDialog);
+    elements.globalSearch.value = "";
+    renderGlobalSearch("");
+    window.setTimeout(function () {
+      elements.globalSearch.focus();
+    }, 50);
+  }
+
+  function renderGlobalSearch(query) {
+    var normalized = (query || "").trim().toLowerCase();
+    if (!normalized) {
+      elements.searchResults.innerHTML = '<p class="empty-copy">Start typing to search civilizations, units, buildings, and technologies.</p>';
+      return;
+    }
+    var all = []
+      .concat(state.entities.civilizations)
+      .concat(state.entities.units)
+      .concat(state.entities.buildings)
+      .concat(state.entities.technologies);
+    var matches = all.filter(function (entity) {
+      return entity.searchText.indexOf(normalized) !== -1;
+    }).slice(0, 18);
+    elements.searchResults.innerHTML = matches.length
+      ? matches.map(function (entity, index) {
+          return '<button class="search-result" type="button" data-search-result="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' +
+            '<span class="search-result-index">' + String(index + 1).padStart(2, "0") + "</span>" +
+            "<span><strong>" + escapeHtml(entity.name) + "</strong><small>" + escapeHtml(entity.description.slice(0, 100)) + "</small></span>" +
+            '<span class="search-result-type">' + escapeHtml(TYPE_LABELS[entity.type]) + "</span>" +
+          "</button>";
+        }).join("")
+      : '<p class="empty-copy">No atlas records match "' + escapeHtml(query) + '".</p>';
+  }
+
+  function openDialog(dialog) {
+    document.querySelectorAll("dialog[open]").forEach(function (open) {
+      if (open !== dialog) {
+        open.close();
+      }
+    });
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  function setAiPrompt(prompt) {
+    switchView("ai");
+    elements.aiQuestion.value = prompt;
+    updateAiContext();
+    window.setTimeout(function () {
+      elements.aiQuestion.focus();
+      elements.aiQuestion.setSelectionRange(prompt.length, prompt.length);
+    }, 80);
+  }
+
+  function updateAiContext() {
+    elements.aiContextLabel.textContent = state.activeEntity
+      ? "Context: " + state.activeEntity.name
+      : "Using the full atlas";
+  }
+
+  async function handleAiSubmit(event) {
+    event.preventDefault();
+    var question = elements.aiQuestion.value.trim();
+    if (!question) {
+      return;
+    }
+    var usage = getDailyUsage();
+    if (usage >= FREE_DAILY_LIMIT) {
+      showToast("Your free strategy briefs are used for today. Forge+ is designed for unlimited sessions.");
+      openDialog(elements.pricingDialog);
+      return;
+    }
+
+    appendChatMessage("user", question);
+    elements.aiQuestion.value = "";
+    elements.chatSuggestions.hidden = true;
+    var thinkingId = appendThinkingMessage();
+    setComposerBusy(true);
+
+    try {
+      var response = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: question,
+          contextType: state.activeEntity ? state.activeEntity.type : "",
+          contextId: state.activeEntity ? state.activeEntity.id : ""
+        })
+      });
+      var payload = await response.json().catch(function () { return {}; });
+      removeThinkingMessage(thinkingId);
+      if (!response.ok) {
+        if (payload.code === "ai_unconfigured") {
+          throw new Error("Forge AI is ready for the DeepSeek key. The atlas and comparison tools are available now.");
+        }
+        if (response.status === 429) {
+          throw new Error("The forge is cooling down after several requests. Try again in a few minutes.");
+        }
+        throw new Error(payload.message || "Forge AI could not create this brief.");
+      }
+      appendChatMessage("assistant", payload.answer, payload.sources || []);
+      incrementDailyUsage();
+    } catch (error) {
+      removeThinkingMessage(thinkingId);
+      appendChatMessage("assistant", error.message || "Forge AI is temporarily unavailable.");
+    } finally {
+      setComposerBusy(false);
+    }
+  }
+
+  function appendChatMessage(role, text, sources) {
+    var article = document.createElement("article");
+    article.className = "chat-message " + (role === "user" ? "user-message" : "assistant-message");
+    var avatar = document.createElement("span");
+    avatar.className = "message-avatar";
+    avatar.textContent = role === "user" ? "YOU" : "F";
+    var body = document.createElement("div");
+    var label = document.createElement("strong");
+    label.textContent = role === "user" ? "You" : "Forge AI";
+    var paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    body.appendChild(label);
+    body.appendChild(paragraph);
+    if (sources && sources.length) {
+      var sourceLine = document.createElement("small");
+      sourceLine.className = "message-sources";
+      sourceLine.textContent = "Atlas records: " + sources.join(", ");
+      body.appendChild(sourceLine);
+    }
+    article.appendChild(avatar);
+    article.appendChild(body);
+    elements.chatMessages.appendChild(article);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+  }
+
+  function appendThinkingMessage() {
+    var id = "thinking-" + Date.now();
+    var article = document.createElement("article");
+    article.id = id;
+    article.className = "chat-message assistant-message thinking-message";
+    article.innerHTML = '<span class="message-avatar">F</span><div><strong>Forge AI</strong><p>Searching the atlas and forging a brief...</p></div>';
+    elements.chatMessages.appendChild(article);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    return id;
+  }
+
+  function removeThinkingMessage(id) {
+    var node = document.getElementById(id);
+    if (node) {
+      node.remove();
+    }
+  }
+
+  function setComposerBusy(busy) {
+    elements.aiQuestion.disabled = busy;
+    var submit = elements.aiForm.querySelector('button[type="submit"]');
+    submit.disabled = busy;
+    submit.textContent = busy ? "Forging..." : "Forge brief ->";
+  }
+
+  function resetChat() {
+    elements.chatMessages.innerHTML =
+      '<article class="chat-message assistant-message">' +
+        '<span class="message-avatar">F</span>' +
+        "<div><strong>Forge AI</strong><p>Fresh slate. Ask about a civilization, unit, technology, or matchup and I will search the atlas first.</p></div>" +
+      "</article>";
+    elements.chatSuggestions.hidden = false;
+    state.activeEntity = null;
+    updateAiContext();
+  }
+
+  function getDailyUsage() {
+    var today = new Date().toISOString().slice(0, 10);
+    var record = readJson("forge-atlas-ai-usage", { date: today, count: 0 });
+    return record.date === today ? Number(record.count || 0) : 0;
+  }
+
+  function incrementDailyUsage() {
+    var today = new Date().toISOString().slice(0, 10);
+    var count = getDailyUsage() + 1;
+    localStorage.setItem("forge-atlas-ai-usage", JSON.stringify({ date: today, count: count }));
+    updateQuota();
+  }
+
+  function updateQuota() {
+    var used = getDailyUsage();
+    var remaining = Math.max(0, FREE_DAILY_LIMIT - used);
+    elements.quotaText.textContent = remaining + " / " + FREE_DAILY_LIMIT + " left";
+    elements.quotaBar.style.transform = "scaleX(" + (remaining / FREE_DAILY_LIMIT) + ")";
+  }
+
+  function savePlanInterest(button) {
+    var plan = button.getAttribute("data-plan-interest");
+    localStorage.setItem("forge-atlas-plan-interest", plan);
+    document.querySelectorAll("[data-plan-interest]").forEach(function (candidate) {
+      if (candidate.getAttribute("data-plan-interest") === plan) {
+        candidate.textContent = "Interest saved";
+      }
+    });
+    showToast(plan + " interest saved on this device. Checkout is the next commercial milestone.");
+  }
+
+  function showToast(message) {
+    window.clearTimeout(toastTimer);
+    elements.toast.textContent = message;
+    elements.toast.classList.add("is-visible");
+    toastTimer = window.setTimeout(function () {
+      elements.toast.classList.remove("is-visible");
+    }, 3400);
+  }
+
+  function readSet(key) {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(key) || "[]");
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch (error) {
+      return new Set();
+    }
+  }
+
+  function writeSet(key, set) {
+    localStorage.setItem(key, JSON.stringify(Array.from(set)));
+  }
+
+  function readJson(key, fallback) {
+    try {
+      return JSON.parse(localStorage.getItem(key)) || fallback;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function setText(id, value) {
+    var node = document.getElementById(id);
+    if (node) {
+      node.textContent = String(value);
+    }
+  }
+
+  function titleCase(value) {
+    return String(value || "")
+      .replace(/[_-]+/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
+  }
+
+  function camelCase(value) {
+    return value.replace(/_([a-z])/g, function (_, letter) { return letter.toUpperCase(); });
+  }
+
+  function escapeHtml(value) {
+    return String(value === undefined || value === null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+})();

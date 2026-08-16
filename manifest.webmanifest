@@ -1,0 +1,17 @@
+{
+  "name": "Forge Atlas",
+  "short_name": "Forge Atlas",
+  "description": "Independent AOE2 strategy intelligence and AI field guide.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111b1f",
+  "theme_color": "#111b1f",
+  "icons": [
+    {
+      "src": "/assets/brand/forge-atlas-og.png",
+      "sizes": "1680x942",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

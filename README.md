@@ -1,50 +1,42 @@
-# AOE2 Forge Atlas
+# Forge Atlas
 
-AOE2 Forge Atlas is a responsive web app for exploring **Age of Empires II**
-civilizations, units, buildings, and technologies from community-open game data.
-The focus is on fast browsing, a strong UI for strategy creators, and a structure
-that is ready for future monetization flows (newsletter, premium tools, guides, ads).
+Forge Atlas is an independent Age of Empires II strategy encyclopedia and AI field guide. It combines the structured Siege Engineers tech-tree dataset with a responsive discovery experience, comparisons, favorites, public-domain historical imagery, and grounded DeepSeek strategy briefs.
 
-## Features
+## Product experience
 
-- Single-page interactive explorer with tabs:
-  - Overview
-  - Civilizations
-  - Units
-  - Buildings
-  - Technologies
-  - Monetization section
-- Search across all entities.
-- Sort options for quick ranking and comparison.
-- Dynamic cards with key stats and quick wiki links.
-- Snapshot export in JSON.
-- Responsive design and animated card flow for desktop and mobile.
+- Responsive discovery homepage and original Forge Atlas brand system
+- Searchable civilizations, units, buildings, and technologies
+- Favorites stored on the current device
+- Two-record comparison tray
+- Context-aware detail briefs
+- Forge AI strategy room with six free daily briefs
+- Forge+ and founder-plan product positioning
+- Public-domain media credits and independent fan-project disclosure
 
-## Tech
+## DeepSeek setup
 
-- Pure HTML/CSS/JavaScript (no framework required).
-- Static JSON dataset shipped in-repo (`data/aoe2-data.json` and
-  `data/aoe2-strings.json` from `SiegeEngineers/aoe2techtree`).
-- External summary endpoint (Wikipedia) for context.
+The API key is only read by the server function at api/ask.js. Never place it in app.js, index.html, a public environment variable, or source control.
 
-## Local run
+Add DEEPSEEK_API_KEY as a sensitive Vercel environment variable for Production and Preview. DEEPSEEK_MODEL is optional and defaults to deepseek-v4-flash. The supported current values are deepseek-v4-flash and deepseek-v4-pro.
 
-1. Open the folder:
-   ```bash
-   cd aoe2-forge-atlas
-   ```
-2. Run any static server, for example:
-   ```bash
-   npx serve .
-   ```
-   or
-   ```bash
-   python -m http.server
-   ```
-3. Open the shown local URL in your browser.
+After adding or changing the variable, create a new deployment because existing deployments do not receive newly added environment variables.
 
-## What to expect
+## Monetizable features
 
-This is a production-friendly static site for Vercel deployment as-is.
-It can be extended later with authentication, premium API routes, and payment
-gateways once your monetization model is ready.
+The factual atlas remains free. Forge+ is designed around ongoing value:
+
+- Unlimited AI matchup and strategy briefs
+- Personalized build-order coaching
+- Cloud-synced playbooks and favorites
+- Matchup lab with saved comparisons
+- Patch-change alerts
+- Weekly practice drills and progress history
+- Founder access, product voting, and locked annual pricing
+
+Authentication, durable cloud storage, analytics, and checkout are the next commercial infrastructure milestones.
+
+## Sources and licensing
+
+Game data is sourced from the Siege Engineers aoe2techtree project. Historical imagery is downloaded into assets/media and documented in assets/media/credits.json. The interface uses original Forge Atlas branding and includes no extracted game sprites or official franchise logos.
+
+This is an independent fan-made resource and is not affiliated with Microsoft or the Age of Empires franchise.

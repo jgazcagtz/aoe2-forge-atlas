@@ -1,157 +1,420 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-    <meta
-      name="description"
-      content="AOE2 Forge Atlas - interactive data explorer for Age of Empires II civilizations, units, buildings and technologies."
-    />
-    <title>AOE2 Forge Atlas</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111b1f">
+    <meta name="description" content="Forge Atlas is an independent Age of Empires II strategy encyclopedia with fast comparisons, deep data, and grounded AI coaching.">
+    <meta property="og:title" content="Forge Atlas | Know the matchup">
+    <meta property="og:description" content="Explore civilizations, units, technologies, counters, and AI-powered strategy briefs.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://aoe2-forge-atlas.vercel.app/">
+    <meta property="og:image" content="https://aoe2-forge-atlas.vercel.app/assets/brand/forge-atlas-og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Forge Atlas | Know the matchup">
+    <meta name="twitter:description" content="An independent AOE2 strategy encyclopedia and AI field guide.">
+    <meta name="twitter:image" content="https://aoe2-forge-atlas.vercel.app/assets/brand/forge-atlas-og.png">
+    <title>Forge Atlas | AOE2 Strategy Intelligence</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" defer></script>
   </head>
   <body>
-    <div class="aurora"></div>
-    <header class="shell header-shell">
-      <p class="kicker">Age of Empires II Hub</p>
-      <h1>AOE2 Forge Atlas</h1>
-      <p class="lead">
-        Civilizations, units, buildings and technologies in one responsive
-        explorer. Built for competitive players, guides creators, and stream
-        content.
-      </p>
-      <div class="hero-grid" id="globalMetrics">
-        <article class="metric">
-          <p class="metric__label">Civilizations</p>
-          <p class="metric__value" id="metricCivs">...</p>
-        </article>
-        <article class="metric">
-          <p class="metric__label">Units</p>
-          <p class="metric__value" id="metricUnits">...</p>
-        </article>
-        <article class="metric">
-          <p class="metric__label">Buildings</p>
-          <p class="metric__value" id="metricBuildings">...</p>
-        </article>
-        <article class="metric">
-          <p class="metric__label">Technologies</p>
-          <p class="metric__value" id="metricTechs">...</p>
-        </article>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="page-grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <button class="brand" type="button" data-view-target="discover" aria-label="Forge Atlas home">
+        <span class="brand-sigil" aria-hidden="true"><span>F</span></span>
+        <span class="brand-copy">
+          <strong>Forge Atlas</strong>
+          <small>AOE2 strategy intelligence</small>
+        </span>
+      </button>
+
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <button type="button" data-view-target="discover" aria-current="page">Discover</button>
+        <button type="button" data-view-target="civilizations">Civilizations</button>
+        <button type="button" data-view-target="database">Database</button>
+        <button type="button" data-view-target="ai">Forge AI <span class="nav-spark">new</span></button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="command-trigger" id="search-trigger" type="button" aria-label="Open search">
+          <span>Search the atlas</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+        <button class="button button-accent button-small" type="button" data-open-pricing>Forge+</button>
       </div>
     </header>
 
-    <main class="shell">
-      <section class="panel controls" aria-label="Search and controls">
-        <div class="controls-row">
-          <label class="sr-only" for="searchInput">Search</label>
-          <input
-            id="searchInput"
-            class="search"
-            type="search"
-            placeholder="Search civilization, unit, building or technology..."
-          />
-          <button id="refreshData" type="button">Refresh source files</button>
-          <button id="exportSnapshot" type="button">Export snapshot (JSON)</button>
+    <main id="main-content">
+      <section class="view is-active" data-view="discover">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><span></span> Independent field guide</p>
+            <h1>Know the matchup.<br><em>Own the age.</em></h1>
+            <p class="hero-lede">A fast, visual strategy atlas for players who want answers without digging through ten tabs. Explore the full tech tree, compare the field, and ask for a grounded strategy brief.</p>
+            <div class="hero-actions">
+              <button class="button button-primary" type="button" data-view-target="civilizations">Explore civilizations</button>
+              <button class="button button-ghost" type="button" data-view-target="ai">Ask Forge AI <span aria-hidden="true">-&gt;</span></button>
+            </div>
+            <ul class="trust-row" aria-label="Product features">
+              <li>Full dataset</li>
+              <li>Source-aware</li>
+              <li>Mobile ready</li>
+            </ul>
+          </div>
+
+          <figure class="hero-media">
+            <img src="./assets/media/medieval-world-map.jpg" alt="Public domain medieval world map from La Mer des Histoires">
+            <div class="hero-media-shade"></div>
+            <figcaption>
+              <span class="map-pin" aria-hidden="true"></span>
+              <div>
+                <small>Field note 01</small>
+                <strong>Every advantage starts with context.</strong>
+              </div>
+            </figcaption>
+            <div class="hero-orbit" aria-hidden="true"><span></span></div>
+          </figure>
         </div>
-        <div class="controls-row">
-          <label class="sr-only" for="sortBy">Sort by</label>
-          <select id="sortBy" aria-label="Sort by">
-            <option value="name-asc">Name A to Z</option>
-            <option value="name-desc">Name Z to A</option>
-            <option value="cost-low">Cost low to high</option>
-            <option value="cost-high">Cost high to low</option>
-            <option value="hp-high">Highest HP</option>
-            <option value="attack-high">Highest attack</option>
-          </select>
-          <span id="statusLine" class="status-line">
-            Loading AOE2 data...
-          </span>
+
+        <section class="stat-ribbon" aria-label="Atlas coverage">
+          <article><strong id="civ-count">--</strong><span>Civilizations</span></article>
+          <article><strong id="unit-count">--</strong><span>Units</span></article>
+          <article><strong id="building-count">--</strong><span>Buildings</span></article>
+          <article><strong id="tech-count">--</strong><span>Technologies</span></article>
+          <p>One searchable command center. Built for quick checks and deep dives.</p>
+        </section>
+
+        <section class="content-section">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">Choose your edge</p>
+              <h2>Three ways into the atlas</h2>
+            </div>
+            <p>Whether you have thirty seconds or an entire evening, start where the question starts.</p>
+          </header>
+          <div class="journey-grid">
+            <button class="journey-card journey-copper" type="button" data-view-target="civilizations">
+              <span class="journey-number">01</span>
+              <span class="journey-icon" aria-hidden="true">CIV</span>
+              <strong>Find your civilization</strong>
+              <span>Browse identities, bonuses, and tech-tree shape.</span>
+              <b>Open civilization index -&gt;</b>
+            </button>
+            <button class="journey-card journey-jade" type="button" data-view-target="database" data-collection-target="units">
+              <span class="journey-number">02</span>
+              <span class="journey-icon" aria-hidden="true">VS</span>
+              <strong>Compare the field</strong>
+              <span>Put units and buildings side by side before queueing up.</span>
+              <b>Launch database -&gt;</b>
+            </button>
+            <button class="journey-card journey-gold" type="button" data-view-target="ai">
+              <span class="journey-number">03</span>
+              <span class="journey-icon" aria-hidden="true">AI</span>
+              <strong>Ask for a game plan</strong>
+              <span>Turn structured data into a concise matchup brief.</span>
+              <b>Ask Forge AI -&gt;</b>
+            </button>
+          </div>
+        </section>
+
+        <section class="content-section featured-section">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">Civilization index</p>
+              <h2>Start with an identity</h2>
+            </div>
+            <button class="text-button" type="button" data-view-target="civilizations">View all <span aria-hidden="true">-&gt;</span></button>
+          </header>
+          <div class="entity-grid entity-grid-featured" id="featured-civs">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </section>
+
+        <section class="ai-stage">
+          <div class="ai-stage-copy">
+            <p class="eyebrow eyebrow-light"><span></span> Forge intelligence</p>
+            <h2>Your post-game rabbit hole, made useful.</h2>
+            <p>Ask why a matchup felt impossible, what a technology unlocks, or how two units compare. Forge AI searches the atlas context first, then writes the brief.</p>
+            <div class="prompt-pills">
+              <button type="button" data-ai-prompt="What makes a strong beginner civilization?">Beginner civilization</button>
+              <button type="button" data-ai-prompt="Explain how to think about cavalry counters.">Cavalry counters</button>
+              <button type="button" data-ai-prompt="Give me a simple Castle Age priority checklist.">Castle Age checklist</button>
+            </div>
+            <button class="button button-light" type="button" data-view-target="ai">Open strategy room</button>
+          </div>
+          <div class="ai-demo" aria-hidden="true">
+            <div class="ai-demo-top"><span>Forge AI</span><i></i></div>
+            <p class="ai-question">"Why does my cavalry push keep stalling?"</p>
+            <div class="ai-answer">
+              <span class="ai-answer-mark">F</span>
+              <p>Start with the resource trade. If your opponent is fielding a cheaper counter, the fight can look even while the economy is not. Check upgrade parity, production count, and whether your mobility is creating damage elsewhere.</p>
+            </div>
+            <div class="ai-source-row"><span>Grounded in atlas records</span><span>Fast brief</span></div>
+          </div>
+        </section>
+
+        <section class="content-section archive-section">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">Visual archive</p>
+              <h2>History, without the museum hush</h2>
+            </div>
+            <p>Public-domain manuscripts and maps give the atlas its texture without borrowing copyrighted game art.</p>
+          </header>
+          <div class="archive-grid">
+            <figure class="archive-tall">
+              <img src="./assets/media/illuminated-manuscript.jpg" loading="lazy" alt="Public domain illuminated medieval manuscript">
+              <figcaption><span>Manuscript study</span><small>CC0 public domain</small></figcaption>
+            </figure>
+            <figure>
+              <img src="./assets/media/constantinople-map.png" loading="lazy" alt="Public domain fifteenth-century map of Constantinople">
+              <figcaption><span>Constantinople, c. 1450</span><small>Public domain</small></figcaption>
+            </figure>
+            <article class="archive-note">
+              <span class="archive-kicker">FORGE NOTE 07</span>
+              <blockquote>"The best counter is often the decision you make before the fight."</blockquote>
+              <button class="text-button" type="button" data-view-target="database">Explore the database -&gt;</button>
+            </article>
+          </div>
+        </section>
+
+        <section class="plus-banner">
+          <div>
+            <span class="plus-mark">F+</span>
+            <p class="eyebrow eyebrow-light">Built for repeat players</p>
+            <h2>Go from looking things up to building a playbook.</h2>
+          </div>
+          <ul>
+            <li>Unlimited AI strategy briefs</li>
+            <li>Saved matchups and build orders</li>
+            <li>Patch watch and personalized drills</li>
+          </ul>
+          <button class="button button-light" type="button" data-open-pricing>See Forge+ plans</button>
+        </section>
+      </section>
+
+      <section class="view" data-view="civilizations" hidden>
+        <div class="view-hero">
+          <div>
+            <p class="eyebrow">Civilization index</p>
+            <h1>Choose an identity,<br><em>not just a bonus.</em></h1>
+          </div>
+          <p>Search the full roster, save favorites, open a detail brief, or add two civilizations to the comparison tray.</p>
         </div>
-
-        <div id="tabButtons" class="tabs">
-          <button data-tab="overview" class="active">Overview</button>
-          <button data-tab="civs">Civilizations</button>
-          <button data-tab="units">Units</button>
-          <button data-tab="buildings">Buildings</button>
-          <button data-tab="techs">Technologies</button>
-          <button data-tab="monetization">Monetization</button>
+        <div class="browser-toolbar">
+          <label class="search-field">
+            <span aria-hidden="true">Q</span>
+            <input id="civ-search" type="search" placeholder="Search civilizations, bonuses, styles..." autocomplete="off">
+          </label>
+          <button class="filter-toggle is-active" type="button" data-favorites-filter="false">All civilizations</button>
+          <button class="filter-toggle" type="button" data-favorites-filter="true">Saved</button>
+          <span class="result-count" id="civ-result-count">Loading atlas...</span>
         </div>
+        <div class="entity-grid" id="civ-grid"></div>
       </section>
 
-      <section class="panel tab-panel active" id="panel-overview">
-        <h2>What is inside the atlas</h2>
-        <p class="muted">
-          This app compiles game-data from open community datasets and keeps your
-          own explorer fast and reusable.
-        </p>
-        <div id="overviewCards" class="card-grid"></div>
-        <div class="grid-two" id="wikiHub"></div>
+      <section class="view" data-view="database" hidden>
+        <div class="view-hero view-hero-database">
+          <div>
+            <p class="eyebrow">Open database</p>
+            <h1>Every moving part.<br><em>One clear field.</em></h1>
+          </div>
+          <p>Browse units, buildings, and technologies with quick facts, favorites, side-by-side comparison, and AI context.</p>
+        </div>
+        <div class="collection-switcher" role="tablist" aria-label="Database collection">
+          <button type="button" role="tab" data-collection="units" aria-selected="true">Units <span id="units-tab-count">--</span></button>
+          <button type="button" role="tab" data-collection="buildings" aria-selected="false">Buildings <span id="buildings-tab-count">--</span></button>
+          <button type="button" role="tab" data-collection="technologies" aria-selected="false">Technologies <span id="technologies-tab-count">--</span></button>
+        </div>
+        <div class="browser-toolbar">
+          <label class="search-field">
+            <span aria-hidden="true">Q</span>
+            <input id="database-search" type="search" placeholder="Search this collection..." autocomplete="off">
+          </label>
+          <button class="filter-toggle is-active" type="button" data-database-filter="all">All records</button>
+          <button class="filter-toggle" type="button" data-database-filter="favorites">Saved</button>
+          <span class="result-count" id="database-result-count">Loading atlas...</span>
+        </div>
+        <div class="entity-grid" id="database-grid"></div>
       </section>
 
-      <section class="panel tab-panel" id="panel-civs">
-        <h2>Civilization Deep Browse</h2>
-        <div id="civsGrid" class="card-grid"></div>
-      </section>
-
-      <section class="panel tab-panel" id="panel-units">
-        <h2>Units Catalog</h2>
-        <p class="muted">
-          Data includes combat stats, cost, HP, speed and upgrade-ready basics.
-        </p>
-        <div id="unitsGrid" class="card-grid"></div>
-      </section>
-
-      <section class="panel tab-panel" id="panel-buildings">
-        <h2>Buildings Catalog</h2>
-        <p class="muted">
-          Compare defensive values, hit points, range and build-time of every
-          structure.
-        </p>
-        <div id="buildingsGrid" class="card-grid"></div>
-      </section>
-
-      <section class="panel tab-panel" id="panel-techs">
-        <h2>Technology Library</h2>
-        <p class="muted">
-          See age-era options, cost profiles, and research-time patterns in one
-          place.
-        </p>
-        <div id="techGrid" class="card-grid"></div>
-      </section>
-
-      <section class="panel tab-panel" id="panel-monetization">
-        <h2>Monetization-ready surfaces</h2>
-        <div class="card-grid">
-          <article class="card">
-            <h3>Newsletter lead magnets</h3>
-            <p>
-              Add a strategy newsletter and convert visitors into recurring
-              subscribers. Capture email in a gated "Patch Snapshot" form.
-            </p>
-            <span class="tag">Growth ready</span>
-          </article>
-          <article class="card">
-            <h3>Affiliate / sponsorship slots</h3>
-            <p>
-              Reserve ad spaces in reusable sections: sidebar card zones, hero
-              cards, and strategy CTA rows.
-            </p>
-            <span class="tag">Revenue ready</span>
-          </article>
-          <article class="card">
-            <h3>Premium plan hooks</h3>
-            <p>
-              Add paid matchup calculators, civ matchup templates, and build order
-              packs without changing your current navigation.
-            </p>
-            <span class="tag">Scale path</span>
-          </article>
+      <section class="view" data-view="ai" hidden>
+        <div class="strategy-room">
+          <aside class="strategy-sidebar">
+            <p class="eyebrow eyebrow-light">Forge intelligence</p>
+            <h1>Ask better.<br><em>Play sharper.</em></h1>
+            <p>Forge AI retrieves relevant atlas records before answering. Exact values still belong to the source data, so every brief includes the records it used.</p>
+            <div class="quota-card">
+              <div><span>Free strategy briefs</span><strong id="quota-text">6 / day</strong></div>
+              <div class="quota-track"><span id="quota-bar"></span></div>
+              <button class="text-button text-button-light" type="button" data-open-pricing>Unlock Forge+ -&gt;</button>
+            </div>
+            <div class="premium-list">
+              <h2>Best paid features</h2>
+              <ul>
+                <li>Unlimited matchup briefs</li>
+                <li>Personalized build-order coach</li>
+                <li>Saved playbooks across devices</li>
+                <li>Patch-change alerts</li>
+              </ul>
+            </div>
+          </aside>
+          <section class="chat-shell" aria-label="Forge AI strategy room">
+            <header class="chat-header">
+              <div><span class="status-dot"></span><strong>Forge AI</strong><small>Atlas-grounded strategy guide</small></div>
+              <button class="icon-button" id="clear-chat" type="button">Clear</button>
+            </header>
+            <div class="chat-messages" id="chat-messages" aria-live="polite">
+              <article class="chat-message assistant-message">
+                <span class="message-avatar">F</span>
+                <div>
+                  <strong>Forge AI</strong>
+                  <p>Bring me a civilization, unit, technology, or matchup question. I will search the atlas and turn the relevant records into a concise field brief.</p>
+                </div>
+              </article>
+            </div>
+            <div class="chat-suggestions" id="chat-suggestions">
+              <button type="button" data-ai-prompt="Compare two beginner-friendly civilizations and explain the tradeoffs.">Compare beginner civs</button>
+              <button type="button" data-ai-prompt="How should I think about countering mass archers?">Counter mass archers</button>
+              <button type="button" data-ai-prompt="Create a simple checklist for reaching Castle Age with a healthy economy.">Castle Age checklist</button>
+            </div>
+            <form class="chat-composer" id="ai-form">
+              <label for="ai-question">Ask Forge AI</label>
+              <textarea id="ai-question" maxlength="600" rows="2" placeholder="Ask about a civilization, counter, technology, or game plan..." required></textarea>
+              <div class="composer-footer">
+                <span id="ai-context-label">Using the full atlas</span>
+                <button class="button button-primary" type="submit">Forge brief <span aria-hidden="true">-&gt;</span></button>
+              </div>
+            </form>
+            <p class="ai-disclaimer">AI can be wrong. Verify exact stats in the atlas before competitive play.</p>
+          </section>
         </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-sigil brand-sigil-small" aria-hidden="true"><span>F</span></span>
+        <div><strong>Forge Atlas</strong><p>An independent, fan-made strategy resource. Not affiliated with Microsoft or the Age of Empires franchise.</p></div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/jgazcagtz/aoe2-forge-atlas" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/SiegeEngineers/aoe2techtree" target="_blank" rel="noreferrer">Data source</a>
+        <button type="button" id="credits-trigger">Image credits</button>
+      </div>
+      <span class="footer-code">FIELD BUILD 02</span>
+    </footer>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <button type="button" data-view-target="discover" aria-current="page"><span>01</span>Home</button>
+      <button type="button" data-view-target="civilizations"><span>02</span>Civs</button>
+      <button type="button" data-view-target="database"><span>03</span>Atlas</button>
+      <button type="button" data-view-target="ai"><span>04</span>AI</button>
+    </nav>
+
+    <div class="compare-tray" id="compare-tray" hidden>
+      <div>
+        <span class="compare-label">Comparison tray</span>
+        <div id="compare-items"></div>
+      </div>
+      <div class="compare-actions">
+        <button class="text-button" id="clear-compare" type="button">Clear</button>
+        <button class="button button-accent button-small" id="compare-now" type="button" disabled>Compare 2</button>
+      </div>
+    </div>
+
+    <dialog class="atlas-dialog search-dialog" id="search-dialog">
+      <div class="dialog-topline">
+        <span>Search the atlas</span>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close search">Close</button>
+      </div>
+      <label class="dialog-search">
+        <span aria-hidden="true">Q</span>
+        <input id="global-search" type="search" placeholder="Try Britons, trebuchet, chemistry..." autocomplete="off">
+        <kbd>Esc</kbd>
+      </label>
+      <div class="search-results" id="search-results">
+        <p class="empty-copy">Start typing to search civilizations, units, buildings, and technologies.</p>
+      </div>
+    </dialog>
+
+    <dialog class="atlas-dialog detail-dialog" id="detail-dialog">
+      <div class="dialog-topline">
+        <span id="detail-kicker">Atlas record</span>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close details">Close</button>
+      </div>
+      <div id="detail-content"></div>
+    </dialog>
+
+    <dialog class="atlas-dialog pricing-dialog" id="pricing-dialog">
+      <div class="dialog-topline">
+        <span>Forge+ membership</span>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close pricing">Close</button>
+      </div>
+      <header class="pricing-header">
+        <p class="eyebrow">Monetizable product layer</p>
+        <h2>The atlas stays open.<br><em>Power tools go further.</em></h2>
+        <p>Players pay for personalization, continuity, and faster decisions, not for basic facts.</p>
+      </header>
+      <div class="pricing-grid">
+        <article class="price-card">
+          <span class="price-name">Explorer</span>
+          <p><strong>$0</strong><small>forever</small></p>
+          <ul>
+            <li>Full searchable atlas</li>
+            <li>Favorites and comparisons</li>
+            <li>6 AI strategy briefs daily</li>
+          </ul>
+          <button class="button button-ghost" type="button" data-close-dialog>Current plan</button>
+        </article>
+        <article class="price-card price-card-featured">
+          <span class="price-badge">Best fit</span>
+          <span class="price-name">Forge+</span>
+          <p><strong>$5</strong><small>/ month</small></p>
+          <ul>
+            <li>Unlimited AI strategy room</li>
+            <li>Personalized build-order coach</li>
+            <li>Cloud playbooks and matchup lab</li>
+            <li>Patch watch and weekly drills</li>
+          </ul>
+          <button class="button button-primary" type="button" data-plan-interest="Forge+">Request early access</button>
+        </article>
+        <article class="price-card">
+          <span class="price-name">Founder's pass</span>
+          <p><strong>$39</strong><small>/ year</small></p>
+          <ul>
+            <li>Everything in Forge+</li>
+            <li>Founding member badge</li>
+            <li>Early feature voting</li>
+            <li>Locked annual price</li>
+          </ul>
+          <button class="button button-accent" type="button" data-plan-interest="Founder's pass">Save my interest</button>
+        </article>
+      </div>
+      <p class="pricing-note">Interest is saved on this device for the early product phase. Checkout and accounts are the next commercial milestone.</p>
+    </dialog>
+
+    <dialog class="atlas-dialog credits-dialog" id="credits-dialog">
+      <div class="dialog-topline">
+        <span>Image credits</span>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close credits">Close</button>
+      </div>
+      <div class="credits-list">
+        <article><strong>Medieval World Map from La Mer des Histoires</strong><p>Unknown author, 1543. Public domain.</p><a href="https://commons.wikimedia.org/wiki/File:Medieval_World_map_from_La_Mer_des_Histoires.jpg" target="_blank" rel="noreferrer">View source</a></article>
+        <article><strong>Illuminated manuscript</strong><p>Archief Grootseminarie Ten Duinen. CC0 1.0.</p><a href="https://commons.wikimedia.org/wiki/File:Illuminated_manuscript.jpg" target="_blank" rel="noreferrer">View source</a></article>
+        <article><strong>Constantinople map</strong><p>Christophorus Bondelmontius, 15th century. Public domain.</p><a href="https://commons.wikimedia.org/wiki/File:Buondelmonti_Bodleian_Constantinopolis.png" target="_blank" rel="noreferrer">View source</a></article>
+        <article><strong>Forge Atlas brand artwork</strong><p>Original AI-assisted project artwork created for Forge Atlas.</p></article>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>
 </html>

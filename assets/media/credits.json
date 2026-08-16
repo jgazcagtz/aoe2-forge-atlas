@@ -1,0 +1,25 @@
+[
+  {
+    "file": "medieval-world-map.jpg",
+    "title": "Medieval World map from La Mer des Histoires",
+    "creator": "Unknown",
+    "date": "1543",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Medieval_World_map_from_La_Mer_des_Histoires.jpg"
+  },
+  {
+    "file": "illuminated-manuscript.jpg",
+    "title": "Illuminated manuscript",
+    "creator": "Unknown, Archief Grootseminarie Ten Duinen",
+    "license": "CC0 1.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Illuminated_manuscript.jpg"
+  },
+  {
+    "file": "constantinople-map.png",
+    "title": "Buondelmonti Bodleian Constantinopolis",
+    "creator": "Christophorus Bondelmontius",
+    "date": "15th century",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Buondelmonti_Bodleian_Constantinopolis.png"
+  }
+]
