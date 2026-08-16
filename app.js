@@ -2,6 +2,11 @@
   "use strict";
 
   var FREE_DAILY_LIMIT = 6;
+  var LOCALE_PATHS = {
+    en: "./data/aoe2-strings.json",
+    es: "./data/aoe2-strings-es.json",
+    "pt-BR": "./data/aoe2-strings-br.json"
+  };
   var VISUALS = [
     "./assets/media/medieval-world-map.jpg",
     "./assets/media/illuminated-manuscript.jpg",
@@ -38,6 +43,7 @@
   var state = {
     data: null,
     strings: {},
+    locale: window.ForgeI18n ? window.ForgeI18n.locale : "en",
     entities: {
       civilizations: [],
       units: [],
@@ -59,6 +65,15 @@
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
+    if (window.ForgeI18n) {
+      window.ForgeI18n.apply();
+      TYPE_LABELS = {
+        civilizations: tr("typeCivilization", "Civilization"),
+        units: tr("typeUnit", "Unit"),
+        buildings: tr("typeBuilding", "Building"),
+        technologies: tr("typeTechnology", "Technology")
+      };
+    }
     cacheElements();
     bindEvents();
     updateQuota();
@@ -125,7 +140,7 @@
     try {
       var responses = await Promise.all([
         fetch("./data/aoe2-data.json"),
-        fetch("./data/aoe2-strings.json")
+        fetch(LOCALE_PATHS[state.locale] || LOCALE_PATHS.en)
       ]);
       if (!responses[0].ok || !responses[1].ok) {
         throw new Error("Atlas data could not be loaded.");
@@ -331,10 +346,10 @@
       var matchesFavorite = !state.civFavoritesOnly || isFavorite(entity);
       return matchesSearch && matchesFavorite;
     });
-    elements.civResultCount.textContent = list.length + " records";
+    elements.civResultCount.textContent = tr("records", list.length + " records", { count: list.length });
     elements.civGrid.innerHTML = list.length
       ? list.map(function (entity, index) { return entityCard(entity, index); }).join("")
-      : '<p class="empty-state">No civilizations match this search yet.</p>';
+      : '<p class="empty-state">' + escapeHtml(tr("noCivs", "No civilizations match this search yet.")) + "</p>";
   }
 
   function renderDatabase() {
@@ -344,10 +359,10 @@
       var matchesFavorite = !state.databaseFavoritesOnly || isFavorite(entity);
       return matchesSearch && matchesFavorite;
     });
-    elements.databaseResultCount.textContent = list.length + " records";
+    elements.databaseResultCount.textContent = tr("records", list.length + " records", { count: list.length });
     elements.databaseGrid.innerHTML = list.length
       ? list.map(function (entity, index) { return entityCard(entity, index); }).join("")
-      : '<p class="empty-state">No records match this search yet.</p>';
+      : '<p class="empty-state">' + escapeHtml(tr("noRecords", "No records match this search yet.")) + "</p>";
   }
 
   function entityCard(entity, index) {
@@ -360,7 +375,7 @@
       meta.push(entity.cost);
     }
     if (!meta.length) {
-      meta.push("Atlas record");
+      meta.push(tr("atlasRecord", "Atlas record"));
     }
     var saved = isFavorite(entity);
     return '<article class="entity-card">' +
@@ -377,9 +392,9 @@
         }).join("") + "</div>" +
       "</div>" +
       '<div class="entity-card-actions">' +
-        '<button class="card-action card-action-primary" type="button" data-open-detail="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Open brief</button>' +
-        '<button class="card-action ' + (saved ? "is-saved" : "") + '" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + (saved ? "Saved" : "Save") + "</button>" +
-        '<button class="card-action" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Compare</button>' +
+        '<button class="card-action card-action-primary" type="button" data-open-detail="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(tr("openBrief", "Open brief")) + "</button>" +
+        '<button class="card-action ' + (saved ? "is-saved" : "") + '" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(saved ? tr("saved", "Saved") : tr("save", "Save")) + "</button>" +
+        '<button class="card-action" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(tr("compare", "Compare")) + "</button>" +
       "</div>" +
     "</article>";
   }
@@ -624,7 +639,7 @@
     if (state.compare.length !== 2) {
       return;
     }
-    elements.detailKicker.textContent = "Side-by-side field brief";
+    elements.detailKicker.textContent = tr("comparisonBrief", "Side-by-side field brief");
     elements.detailContent.innerHTML = '<div class="comparison-grid">' +
       state.compare.map(function (entity) {
         return '<article class="comparison-column">' +
@@ -632,7 +647,7 @@
           "<h2>" + escapeHtml(entity.name) + "</h2>" +
           '<dl class="fact-grid">' + renderFacts(entity) + "</dl>" +
           '<p>' + escapeHtml(entity.description) + "</p>" +
-          '<button class="button button-ghost" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Ask AI about this</button>' +
+          '<button class="button button-ghost" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(tr("askAi", "Ask Forge AI")) + "</button>" +
         "</article>";
       }).join("") +
     "</div>";
@@ -648,7 +663,7 @@
     var bullets = extractBullets(entity.raw);
     var saved = isFavorite(entity);
     var image = VISUALS[(entity.order + typeOffset(entity.type)) % VISUALS.length];
-    elements.detailKicker.textContent = TYPE_LABELS[entity.type] + " atlas record";
+    elements.detailKicker.textContent = tr("detailRecord", TYPE_LABELS[entity.type] + " atlas record", { type: TYPE_LABELS[entity.type] });
     elements.detailContent.innerHTML =
       '<div class="detail-hero">' +
         '<img src="' + image + '" alt="">' +
@@ -657,15 +672,15 @@
           "<h2>" + escapeHtml(entity.name) + "</h2>" +
           "<p>" + escapeHtml(entity.description) + "</p>" +
           '<div class="detail-actions">' +
-            '<button class="button button-primary" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Ask Forge AI</button>' +
-            '<button class="button button-ghost" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + (saved ? "Saved" : "Save record") + "</button>" +
-            '<button class="button button-ghost" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">Compare</button>' +
+            '<button class="button button-primary" type="button" data-ask-context="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(tr("askAi", "Ask Forge AI")) + "</button>" +
+            '<button class="button button-ghost" type="button" data-favorite="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(saved ? tr("saved", "Saved") : tr("saveRecord", "Save record")) + "</button>" +
+            '<button class="button button-ghost" type="button" data-compare="' + escapeHtml(entity.id) + '" data-entity-type="' + entity.type + '">' + escapeHtml(tr("compare", "Compare")) + "</button>" +
           "</div>" +
         "</div>" +
       "</div>" +
       '<div class="detail-body">' +
-        '<section class="fact-panel"><h3>Quick facts</h3><dl class="fact-grid">' + renderFacts(entity) + "</dl></section>" +
-        '<section class="context-panel"><h3>Strategy context</h3>' +
+        '<section class="fact-panel"><h3>' + escapeHtml(tr("quickFacts", "Quick facts")) + '</h3><dl class="fact-grid">' + renderFacts(entity) + "</dl></section>" +
+        '<section class="context-panel"><h3>' + escapeHtml(tr("strategyContext", "Strategy context")) + "</h3>" +
           (bullets.length
             ? "<ul>" + bullets.slice(0, 8).map(function (bullet) { return "<li>" + escapeHtml(bullet) + "</li>"; }).join("") + "</ul>"
             : "<p>Use Forge AI to connect this record to counters, upgrades, and civilization choices.</p>") +
@@ -677,10 +692,10 @@
   function renderFacts(entity) {
     var facts = [];
     if (entity.age) {
-      facts.push(["Available", entity.age]);
+      facts.push([tr("available", "Available"), entity.age]);
     }
     if (entity.cost) {
-      facts.push(["Cost", entity.cost]);
+      facts.push([tr("cost", "Cost"), entity.cost]);
     }
     Object.keys(FACT_LABELS).forEach(function (key) {
       if (key === "age" || key === "cost") {
@@ -697,15 +712,15 @@
     if (entity.type === "civilizations" && entity.raw.tech_tree) {
       var tree = entity.raw.tech_tree;
       if (tree.units && tree.units.length !== undefined) {
-        facts.push(["Unit options", tree.units.length]);
+        facts.push([tr("unitOptions", "Unit options"), tree.units.length]);
       }
       if (tree.techs && tree.techs.length !== undefined) {
-        facts.push(["Technology options", tree.techs.length]);
+        facts.push([tr("technologyOptions", "Technology options"), tree.techs.length]);
       }
     }
     if (!facts.length) {
-      facts.push(["Record type", TYPE_LABELS[entity.type]]);
-      facts.push(["Atlas ID", entity.id]);
+      facts.push([tr("recordType", "Record type"), TYPE_LABELS[entity.type]]);
+      facts.push([tr("atlasId", "Atlas ID"), entity.id]);
     }
     return facts.slice(0, 10).map(function (fact) {
       return "<div><dt>" + escapeHtml(fact[0]) + "</dt><dd>" + escapeHtml(String(fact[1])) + "</dd></div>";
@@ -799,8 +814,8 @@
 
   function updateAiContext() {
     elements.aiContextLabel.textContent = state.activeEntity
-      ? "Context: " + state.activeEntity.name
-      : "Using the full atlas";
+      ? tr("aiContext", "Context: {name}", { name: state.activeEntity.name })
+      : tr("aiUsing", "Using the full atlas");
   }
 
   async function handleAiSubmit(event) {
@@ -827,9 +842,10 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question: question,
+          question: aiQuestionForLocale(question),
           contextType: state.activeEntity ? state.activeEntity.type : "",
-          contextId: state.activeEntity ? state.activeEntity.id : ""
+          contextId: state.activeEntity ? state.activeEntity.id : "",
+          locale: state.locale
         })
       });
       var payload = await response.json().catch(function () { return {}; });
@@ -907,7 +923,7 @@
     elements.chatMessages.innerHTML =
       '<article class="chat-message assistant-message">' +
         '<span class="message-avatar">F</span>' +
-        "<div><strong>Forge AI</strong><p>Fresh slate. Ask about a civilization, unit, technology, or matchup and I will search the atlas first.</p></div>" +
+        "<div><strong>Forge AI</strong><p>" + escapeHtml(tr("aiFresh", "Fresh slate. Ask about a civilization, unit, technology, or matchup and I will search the atlas first.")) + "</p></div>" +
       "</article>";
     elements.chatSuggestions.hidden = false;
     state.activeEntity = null;
@@ -930,7 +946,10 @@
   function updateQuota() {
     var used = getDailyUsage();
     var remaining = Math.max(0, FREE_DAILY_LIMIT - used);
-    elements.quotaText.textContent = remaining + " / " + FREE_DAILY_LIMIT + " left";
+    elements.quotaText.textContent = tr("quota", "{remaining} / {limit} left", {
+      remaining: remaining,
+      limit: FREE_DAILY_LIMIT
+    });
     elements.quotaBar.style.transform = "scaleX(" + (remaining / FREE_DAILY_LIMIT) + ")";
   }
 
@@ -1000,5 +1019,17 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function tr(key, fallback, variables) {
+    if (!window.ForgeI18n) return fallback;
+    var translated = window.ForgeI18n.t(key, variables);
+    return translated === key ? fallback : translated;
+  }
+
+  function aiQuestionForLocale(question) {
+    if (state.locale === "es") return "Responde siempre en español. Pregunta del usuario: " + question;
+    if (state.locale === "pt-BR") return "Responda sempre em português do Brasil. Pergunta do usuário: " + question;
+    return question;
   }
 })();

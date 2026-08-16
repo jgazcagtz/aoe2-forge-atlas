@@ -1,4 +1,11 @@
 {
   "version": 2,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/es", "destination": "/index.html" },
+    { "source": "/pt-br", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron/weekly-hub", "schedule": "0 8 * * 1" }
+  ]
 }

@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/">
     <meta name="theme-color" content="#111b1f">
     <meta name="description" content="Forge Atlas is an independent Age of Empires II strategy encyclopedia with fast comparisons, deep data, and grounded AI coaching.">
     <meta property="og:title" content="Forge Atlas | Know the matchup">
@@ -15,12 +16,20 @@
     <meta name="twitter:description" content="An independent AOE2 strategy encyclopedia and AI field guide.">
     <meta name="twitter:image" content="https://aoe2-forge-atlas.vercel.app/assets/brand/forge-atlas-og.png">
     <title>Forge Atlas | AOE2 Strategy Intelligence</title>
+    <link rel="canonical" href="https://aoe2-forge-atlas.vercel.app/">
+    <link rel="alternate" hreflang="en" href="https://aoe2-forge-atlas.vercel.app/">
+    <link rel="alternate" hreflang="es" href="https://aoe2-forge-atlas.vercel.app/es">
+    <link rel="alternate" hreflang="pt-BR" href="https://aoe2-forge-atlas.vercel.app/pt-br">
+    <link rel="alternate" hreflang="x-default" href="https://aoe2-forge-atlas.vercel.app/">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./hub.css">
+    <script src="./i18n.js" defer></script>
     <script src="./app.js" defer></script>
+    <script src="./hub.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -38,6 +47,7 @@
         <button type="button" data-view-target="discover" aria-current="page">Discover</button>
         <button type="button" data-view-target="civilizations">Civilizations</button>
         <button type="button" data-view-target="database">Database</button>
+        <button type="button" data-view-target="hub">Weekly Hub <span class="nav-spark">live</span></button>
         <button type="button" data-view-target="ai">Forge AI <span class="nav-spark">new</span></button>
       </nav>
 
@@ -46,6 +56,11 @@
           <span>Search the atlas</span>
           <kbd>Ctrl K</kbd>
         </button>
+        <div class="language-switcher" aria-label="Language">
+          <a href="/" data-locale-link="en" lang="en">EN</a>
+          <a href="/es" data-locale-link="es" lang="es">ES</a>
+          <a href="/pt-br" data-locale-link="pt-BR" lang="pt-BR">PT</a>
+        </div>
         <button class="button button-accent button-small" type="button" data-open-pricing>Forge+</button>
       </div>
     </header>
@@ -90,7 +105,7 @@
           <p>One searchable command center. Built for quick checks and deep dives.</p>
         </section>
 
-        <section class="content-section">
+        <section class="content-section journey-section">
           <header class="section-heading">
             <div>
               <p class="eyebrow">Choose your edge</p>
@@ -246,6 +261,83 @@
         <div class="entity-grid" id="database-grid"></div>
       </section>
 
+      <section class="view hub-view" data-view="hub" hidden>
+        <div class="hub-hero">
+          <div class="hub-hero-copy">
+            <p class="eyebrow eyebrow-light"><span></span> Weekly community signal</p>
+            <h1>This week in<br><em>Age of Empires II.</em></h1>
+            <p>A source-led briefing with current tournaments, official news, community videos, and an AI summary that separates confirmed facts from recommendations.</p>
+            <div class="hub-actions">
+              <span id="hub-week-label">Loading this week's signal...</span>
+              <button class="button button-light" id="hub-refresh" type="button">Refresh briefing</button>
+            </div>
+          </div>
+          <aside class="weekly-brief-card">
+            <div class="weekly-brief-top">
+              <span>Forge weekly brief</span>
+              <i></i>
+            </div>
+            <p id="weekly-brief">Collecting the latest signals from trusted AOE2 sources.</p>
+            <small id="hub-generated-at">Source refresh in progress</small>
+          </aside>
+        </div>
+
+        <div class="hub-shell">
+          <section class="hub-section">
+            <header class="section-heading">
+              <div>
+                <p class="eyebrow">Competitive radar</p>
+                <h2>Tournaments to watch</h2>
+              </div>
+              <a class="text-button" href="https://liquipedia.net/ageofempires/Age_of_Empires_II/Tournaments/2026-27" target="_blank" rel="noreferrer">Full calendar -&gt;</a>
+            </header>
+            <div class="tournament-grid" id="tournament-grid">
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+            </div>
+          </section>
+
+          <section class="hub-section">
+            <header class="section-heading">
+              <div>
+                <p class="eyebrow">Official dispatches</p>
+                <h2>News and updates</h2>
+              </div>
+              <a class="text-button" href="https://www.ageofempires.com/news/" target="_blank" rel="noreferrer">Official news -&gt;</a>
+            </header>
+            <div class="news-grid" id="news-grid">
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+            </div>
+          </section>
+
+          <section class="hub-section">
+            <header class="section-heading">
+              <div>
+                <p class="eyebrow">Watch and learn</p>
+                <h2>Fresh community videos</h2>
+              </div>
+              <p>Selected from official and established creator feeds. Forge Atlas does not rehost their work.</p>
+            </header>
+            <div class="video-grid" id="video-grid">
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+            </div>
+          </section>
+
+          <section class="source-standard">
+            <div>
+              <p class="eyebrow eyebrow-light">Source standard</p>
+              <h2>Links first. AI second.</h2>
+            </div>
+            <p>Dates and titles come from the linked publisher, tournament wiki, or creator feed. DeepSeek summarizes only the retrieved material and never replaces the original source.</p>
+            <span id="hub-source-status">Waiting for source results</span>
+          </section>
+        </div>
+      </section>
+
       <section class="view" data-view="ai" hidden>
         <div class="strategy-room">
           <aside class="strategy-sidebar">
@@ -317,7 +409,8 @@
       <button type="button" data-view-target="discover" aria-current="page"><span>01</span>Home</button>
       <button type="button" data-view-target="civilizations"><span>02</span>Civs</button>
       <button type="button" data-view-target="database"><span>03</span>Atlas</button>
-      <button type="button" data-view-target="ai"><span>04</span>AI</button>
+      <button type="button" data-view-target="hub"><span>04</span>Hub</button>
+      <button type="button" data-view-target="ai"><span>05</span>AI</button>
     </nav>
 
     <div class="compare-tray" id="compare-tray" hidden>
