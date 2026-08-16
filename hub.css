@@ -99,6 +99,11 @@
   margin-top: 1.5rem;
 }
 
+#hub-source-status {
+  font-size: 0.86rem;
+  opacity: 0.82;
+}
+
 .hub-status {
   font-size: 0.78rem;
   font-weight: 700;
@@ -178,7 +183,8 @@
 
 .tournament-grid,
 .news-grid,
-.video-grid {
+.video-grid,
+.reddit-grid {
   display: grid;
   gap: 1rem;
 }
@@ -188,8 +194,13 @@
 }
 
 .news-grid,
-.video-grid {
+.video-grid,
+.reddit-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reddit-grid .video-channel {
+  color: var(--hub-ink);
 }
 
 .hub-card {
@@ -278,6 +289,28 @@
   text-underline-offset: 0.3rem;
 }
 
+.hub-source-link.is-disabled {
+  cursor: default;
+  opacity: 0.48;
+  text-decoration: none;
+  pointer-events: none;
+}
+
+.reddit-card .hub-card-date {
+  color: rgba(18, 16, 12, 0.58);
+}
+
+.hub-skeleton {
+  min-height: 154px;
+  border-radius: 1rem;
+  border: 1px dashed var(--hub-line);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.42) 50%, rgba(255, 255, 255, 0)),
+    rgba(255, 252, 241, 0.78);
+  background-size: 220% 100%, 100% 100%;
+  animation: hub-skeleton-wave 1.3s linear infinite;
+}
+
 .video-card {
   padding: 0 0 1.4rem;
   overflow: hidden;
@@ -360,6 +393,13 @@
   line-height: 1.7;
 }
 
+.hub-source-note {
+  margin-top: 1rem;
+  max-width: 680px;
+  color: rgba(255, 250, 236, 0.72);
+  font-size: 0.85rem;
+}
+
 .hub-empty {
   grid-column: 1 / -1;
   padding: 2rem;
@@ -374,6 +414,16 @@
   50% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes hub-skeleton-wave {
+  from {
+    background-position: -140% 0, 0 0;
+  }
+
+  to {
+    background-position: 140% 0, 0 0;
+  }
+}
+
 @media (max-width: 980px) {
   .hub-hero,
   .source-standard {
@@ -381,7 +431,8 @@
   }
 
   .news-grid,
-  .video-grid {
+  .video-grid,
+  .reddit-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -412,7 +463,8 @@
 
   .tournament-grid,
   .news-grid,
-  .video-grid {
+  .video-grid,
+  .reddit-grid {
     grid-template-columns: 1fr;
   }
 

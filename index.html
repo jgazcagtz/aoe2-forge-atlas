@@ -34,14 +34,14 @@
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="page-grain" aria-hidden="true"></div>
-    <header class="site-header">
-      <button class="brand" type="button" data-view-target="discover" aria-label="Forge Atlas home">
-        <span class="brand-sigil" aria-hidden="true"><span>F</span></span>
-        <span class="brand-copy">
-          <strong>Forge Atlas</strong>
-          <small>AOE2 strategy intelligence</small>
-        </span>
-      </button>
+      <header class="site-header">
+        <button class="brand" type="button" data-view-target="discover" aria-label="Forge Atlas home">
+          <span class="brand-mark" aria-hidden="true"><img src="./assets/brand/forge-atlas-logo.svg" alt="" width="44" height="44"></span>
+          <span class="brand-copy">
+            <strong>Forge Atlas</strong>
+            <small>AOE2 strategy intelligence</small>
+          </span>
+        </button>
 
       <nav class="primary-nav" aria-label="Primary navigation">
         <button type="button" data-view-target="discover" aria-current="page">Discover</button>
@@ -265,13 +265,14 @@
         <div class="hub-hero">
           <div class="hub-hero-copy">
             <p class="eyebrow eyebrow-light"><span></span> Weekly community signal</p>
-            <h1>This week in<br><em>Age of Empires II.</em></h1>
-            <p>A source-led briefing with current tournaments, official news, community videos, and an AI summary that separates confirmed facts from recommendations.</p>
-            <div class="hub-actions">
-              <span id="hub-week-label">Loading this week's signal...</span>
-              <button class="button button-light" id="hub-refresh" type="button">Refresh briefing</button>
+              <h1>This week in<br><em>Age of Empires II.</em></h1>
+              <p>A source-led briefing with current tournaments, official news, community videos, and an AI summary that separates confirmed facts from recommendations.</p>
+              <div class="hub-actions">
+                <span id="hub-week-label">Loading this week's signal...</span>
+                <span id="hub-source-status">Source status pending...</span>
+                <button class="button button-light" id="hub-refresh" type="button">Refresh briefing</button>
+              </div>
             </div>
-          </div>
           <aside class="weekly-brief-card">
             <div class="weekly-brief-top">
               <span>Forge weekly brief</span>
@@ -327,13 +328,28 @@
             </div>
           </section>
 
+          <section class="hub-section">
+            <header class="section-heading">
+              <div>
+                <p class="eyebrow">Community intelligence</p>
+                <h2>Reddit and creator signal</h2>
+              </div>
+              <p>Live thread picks and creator conversations from EN/ES/PT communities.</p>
+            </header>
+            <div class="reddit-grid" id="reddit-grid">
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+              <div class="hub-skeleton"></div>
+            </div>
+          </section>
+
           <section class="source-standard">
             <div>
               <p class="eyebrow eyebrow-light">Source standard</p>
               <h2>Links first. AI second.</h2>
             </div>
             <p>Dates and titles come from the linked publisher, tournament wiki, or creator feed. DeepSeek summarizes only the retrieved material and never replaces the original source.</p>
-            <span id="hub-source-status">Waiting for source results</span>
+            <p class="hub-source-note">Source status updates above. DeepSeek only summarizes verified source cards in this weekly window.</p>
           </section>
         </div>
       </section>
@@ -394,7 +410,7 @@
 
     <footer class="site-footer">
       <div class="footer-brand">
-        <span class="brand-sigil brand-sigil-small" aria-hidden="true"><span>F</span></span>
+        <span class="brand-mark brand-mark-small" aria-hidden="true"><img src="./assets/brand/forge-atlas-logo.svg" alt="" width="36" height="36"></span>
         <div><strong>Forge Atlas</strong><p>An independent, fan-made strategy resource. Not affiliated with Microsoft or the Age of Empires franchise.</p></div>
       </div>
       <div class="footer-links">

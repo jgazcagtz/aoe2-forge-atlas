@@ -5,7 +5,9 @@ module.exports = async function handler(req, res) {
   }
 
   const expected = process.env.CRON_SECRET;
-  if (!expected || req.headers.authorization !== "Bearer " + expected) {
+  const fromVercelCron = req.headers["x-vercel-cron"] === "1";
+  const hasBearer = req.headers.authorization === "Bearer " + expected;
+  if (!expected || (!fromVercelCron && !hasBearer)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

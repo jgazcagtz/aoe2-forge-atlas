@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Forge Atlas icon</title>
+  <desc id="desc">Forge Atlas crest logo with forged blade, compass, and age-forged badge.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6edd8"/>
+      <stop offset="100%" stop-color="#e8d5b4"/>
+    </linearGradient>
+    <linearGradient id="crest" x1="0.12" y1="0.05" x2="0.9" y2="0.95">
+      <stop offset="0%" stop-color="#1f2529"/>
+      <stop offset="45%" stop-color="#202f2e"/>
+      <stop offset="100%" stop-color="#8f3a21"/>
+    </linearGradient>
+    <linearGradient id="forge-core" x1="0.2" y1="0.15" x2="0.8" y2="0.85">
+      <stop offset="0%" stop-color="#e8be4d"/>
+      <stop offset="100%" stop-color="#bc642b"/>
+    </linear-gradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fdf8ec"/>
+      <stop offset="100%" stop-color="#d3bf98"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="2.4" flood-color="#0f171c" flood-opacity="0.28"/>
+    </filter>
+    <pattern id="grain" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="rgba(255,255,255,0.14)"/>
+      <path d="M0 0 L120 120 M120 0 L0 120" stroke="rgba(17,27,31,0.12)" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <circle cx="128" cy="128" r="114" fill="url(#bg)" stroke="url(#ring)" stroke-width="8"/>
+  <circle cx="128" cy="128" r="108" fill="url(#grain)" opacity="0.33"/>
+  <circle cx="128" cy="128" r="102" fill="none" stroke="rgba(17,27,31,0.22)" stroke-width="3.5"/>
+
+  <g transform="translate(128 128)" filter="url(#soft)">
+    <path d="M-70 44 L70 44 L66 86 C66 123 0 174 -0.4 172 C0 172 -66 123 -66 86 Z" fill="#151e23"/>
+    <path d="M-60 38 L60 38 L56 74 C56 107 0 158 -0.3 158 C-0.3 158 -56 107 -56 74 Z" fill="url(#crest)"/>
+
+    <path d="M-18 22 L18 22 L28 88 L0 104 L-28 88 Z" fill="url(#forge-core)" opacity="0.98"/>
+    <path d="M-18 22 L18 22 L18 30 L-18 30 Z" fill="#191d20"/>
+
+    <g transform="rotate(-12)">
+      <rect x="-58" y="38" width="14" height="78" rx="7" fill="#252c31"/>
+      <rect x="44" y="38" width="14" height="78" rx="7" fill="#252c31"/>
+      <rect x="-58" y="106" width="116" height="9" rx="5" fill="#23282b"/>
+    </g>
+
+    <path d="M-52 54 C-28 40 -5 30 0 8 C5 30 28 40 52 54" fill="none" stroke="#ffebb0" stroke-width="4" stroke-linecap="round" opacity="0.84"/>
+
+    <g transform="translate(0 22)">
+      <line x1="-39" y1="0" x2="39" y2="0" stroke="#ffefbe" stroke-width="3.6" stroke-linecap="round"/>
+      <line x1="0" y1="-42" x2="0" y2="42" stroke="#ffefbe" stroke-width="3.1" stroke-linecap="round"/>
+      <path d="M0 -42 L10 -28 L-10 -28 Z" fill="#ffefbe"/>
+    </g>
+
+    <g transform="translate(0 66)">
+      <circle cx="-4" cy="0" r="6" fill="#fdf8ec" opacity="0.98"/>
+      <circle cx="9" cy="7" r="6" fill="#fdf8ec" opacity="0.92"/>
+      <circle cx="16" cy="18" r="6" fill="#fdf8ec" opacity="0.86"/>
+    </g>
+
+    <path d="M-8 72 L8 72 L0 108 Z" fill="#11181f"/>
+  </g>
+
+  <g transform="translate(128 34)">
+    <path d="M0 14 C-20 14 -34 22 -34 37 C-34 49 -21 58 0 58 C21 58 34 49 34 37 C34 22 20 14 0 14 Z" fill="#fffbef"/>
+    <path d="M0 21 C-17 21 -27 27 -27 37 C-27 45 -17 52 0 52 C17 52 27 45 27 37 C27 27 17 21 0 21 Z" fill="#141d22"/>
+  </g>
+
+  <circle cx="128" cy="128" r="118.8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+</svg>

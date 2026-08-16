@@ -5,47 +5,63 @@
   var languageTag = locale === "pt-BR" ? "pt-BR" : locale;
   var loaded = false;
   var loading = false;
+  var loadedWeek = "";
 
   var copy = {
     en: {
       loading: "Collecting this week's AOE2 signals...",
       error: "The live sources are taking a break. Try again in a moment.",
+      noBrief: "Weekly brief is temporarily unavailable. Tap a section to inspect the source card.",
       emptyTournaments: "No current tournaments were returned by the source.",
       emptyNews: "No recent official AOE2 stories were returned.",
       emptyVideos: "No recent videos were returned.",
+      emptyReddit: "No Reddit threads were returned.",
       source: "Open source",
       watch: "Watch video",
+      reddit: "Open thread",
       refresh: "Refresh",
       refreshed: "Updated {date}",
       sources: "{count} live sources",
+      sourceStatus: "{active} / {total} sources active in this signal",
+      generatedAt: "Source sync completed {date}",
       prize: "Prize",
       location: "Location"
     },
     es: {
       loading: "Reuniendo las señales de AOE2 de esta semana...",
       error: "Las fuentes en vivo están tardando. Inténtalo de nuevo en un momento.",
+      noBrief: "El resumen semanal no está disponible temporalmente. Abre una tarjeta para verificar la fuente.",
       emptyTournaments: "La fuente no devolvió torneos actuales.",
       emptyNews: "No se encontraron noticias oficiales recientes de AOE2.",
       emptyVideos: "No se encontraron videos recientes.",
+      emptyReddit: "No se encontraron hilos recientes de Reddit.",
       source: "Abrir fuente",
       watch: "Ver video",
+      reddit: "Abrir hilo",
       refresh: "Actualizar",
       refreshed: "Actualizado {date}",
       sources: "{count} fuentes en vivo",
+      sourceStatus: "{active} / {total} fuentes activas en esta señal",
+      generatedAt: "Sincronización finalizada {date}",
       prize: "Premio",
       location: "Sede"
     },
     "pt-BR": {
       loading: "Reunindo os sinais de AOE2 desta semana...",
       error: "As fontes ao vivo estão demorando. Tente novamente em instantes.",
+      noBrief: "O resumo semanal está temporariamente indisponível. Toque em uma seção para checar a fonte.",
       emptyTournaments: "A fonte não retornou torneios atuais.",
       emptyNews: "Nenhuma notícia oficial recente de AOE2 foi encontrada.",
       emptyVideos: "Nenhum vídeo recente foi encontrado.",
+      emptyReddit: "Nenhum tópico recente do Reddit foi encontrado.",
       source: "Abrir fonte",
       watch: "Ver vídeo",
+      reddit: "Abrir tópico",
       refresh: "Atualizar",
       refreshed: "Atualizado em {date}",
       sources: "{count} fontes ao vivo",
+      sourceStatus: "{active} / {total} fontes ativas nesta edição",
+      generatedAt: "Sincronização concluída {date}",
       prize: "Premiação",
       location: "Local"
     }
@@ -70,22 +86,24 @@
   }
 
   async function loadHub(force) {
-    if (loading || (loaded && !force)) return;
+    var week = getIsoWeek(new Date());
+    if (loading || (!force && loaded && loadedWeek === week)) return;
     loading = true;
     setStatus(copy.loading, true);
 
     try {
-      var week = getIsoWeek(new Date());
       var response = await fetch("/api/hub?locale=" + encodeURIComponent(locale) + "&week=" + encodeURIComponent(week) + (force ? "&refresh=1" : ""));
       var payload = await response.json().catch(function () { return {}; });
       if (!response.ok) throw new Error(payload.error || "Hub unavailable");
       renderHub(payload);
       loaded = true;
+      loadedWeek = week;
     } catch (error) {
       setStatus(copy.error, false);
       renderEmpty(".tournament-grid", copy.emptyTournaments);
       renderEmpty(".news-grid", copy.emptyNews);
       renderEmpty(".video-grid", copy.emptyVideos);
+      renderEmpty(".reddit-grid", copy.emptyReddit);
     } finally {
       loading = false;
     }
@@ -94,15 +112,21 @@
   function renderHub(payload) {
     var date = formatDate(payload.generatedAt || new Date().toISOString(), true);
     setStatus(format(copy.refreshed, { date: date }), false);
+    setText("#hub-generated-at", format(copy.generatedAt, { date: date }));
+    setText("#hub-source-status", format(copy.sourceStatus, {
+      active: payload.sourceCount || 0,
+      total: payload.sourceCountTotal || 0
+    }));
     setText("[data-hub-week], #hub-week-label", payload.weekLabel || getIsoWeek(new Date()));
     setText("[data-hub-source-count], #hub-source-count", format(copy.sources, { count: payload.sourceCount || 0 }));
 
     var brief = document.querySelector("[data-weekly-brief], #weekly-brief, .weekly-brief-card p");
-    if (brief) brief.textContent = payload.brief || "";
+    if (brief) brief.textContent = payload.brief ? payload.brief : copy.noBrief;
 
     renderTournaments(payload.tournaments || []);
     renderNews(payload.news || []);
     renderVideos(payload.videos || []);
+    renderReddit(payload.reddit || []);
   }
 
   function renderTournaments(items) {
@@ -171,6 +195,23 @@
     });
   }
 
+  function renderReddit(items) {
+    var grid = document.querySelector(".reddit-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    if (!items.length) return appendEmpty(grid, copy.emptyReddit);
+
+    items.forEach(function (item) {
+      var card = el("article", "hub-card reddit-card");
+      card.appendChild(el("span", "video-channel", item.channel || "Reddit"));
+      card.appendChild(el("time", "hub-card-date", formatDate(item.publishedAt)));
+      card.appendChild(el("h3", "", item.title));
+      if (item.excerpt) card.appendChild(el("p", "", item.excerpt));
+      card.appendChild(sourceLink(item.url, copy.reddit));
+      grid.appendChild(card);
+    });
+  }
+
   function fact(label, value) {
     var node = el("span", "hub-fact");
     node.appendChild(el("small", "", label));
@@ -180,17 +221,29 @@
 
   function sourceLink(url, label) {
     var link = el("a", "hub-source-link", label);
-    link.href = url || "#";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
+    if (url && /^https?:\/\//i.test(url)) {
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      return link;
+    }
+
+    link.classList.add("is-disabled");
+    link.setAttribute("aria-disabled", "true");
+    link.removeAttribute("href");
+    link.setAttribute("tabindex", "-1");
+    link.removeAttribute("target");
+    link.removeAttribute("rel");
     return link;
   }
 
   function setStatus(message, busy) {
-    var node = document.querySelector("[data-hub-status], #hub-status, .hub-status");
-    if (!node) return;
-    node.textContent = message;
-    node.setAttribute("aria-busy", busy ? "true" : "false");
+    var nodes = document.querySelectorAll("[data-hub-status], #hub-status, #hub-generated-at, #hub-source-status, .hub-status");
+    if (!nodes.length) return;
+    Array.prototype.forEach.call(nodes, function (node) {
+      node.textContent = message;
+      node.setAttribute("aria-busy", busy ? "true" : "false");
+    });
   }
 
   function renderEmpty(selector, message) {
